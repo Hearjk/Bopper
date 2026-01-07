@@ -1,0 +1,24 @@
+# Build directories
+Build/
+build/
+cmake-build-*/
+
+# IDE files
+.idea/
+*.xcodeproj/
+*.xcworkspace/
+.vscode/
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# Compiled files
+*.o
+*.a
+*.dylib
+
+# Plugin artifacts
+*.component
+*.vst3
+*.app
