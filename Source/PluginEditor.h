@@ -20,12 +20,11 @@ public:
 private:
     void timerCallback() override;
     void loadPresetGif(int index);
-    void openFileChooser();
-    void loadCustomGif(const juce::File& file);
     void loadSavedGif(int slot);
-    void saveCurrentGifToSlot(int slot);
-    void enterFullscreen();
-    void exitFullscreen();
+    void uploadToSlot(int slot);
+    void deleteFromSlot(int slot);
+    void enterTheaterMode();
+    void exitTheaterMode();
     void updateSpeedLabel();
 
     // Embedded preset GIF data
@@ -56,16 +55,13 @@ private:
     juce::Slider speedSlider;
     juce::Label speedLabel;
 
-    // Fullscreen button
-    juce::TextButton fullscreenButton;
-    bool isFullscreen = false;
-    juce::Rectangle<int> normalBounds;
+    // Theater mode button
+    juce::TextButton theaterButton;
+    bool isTheaterMode = false;
 
     // For file browsing
     std::unique_ptr<juce::FileChooser> fileChooser;
-
-    // Currently loaded custom GIF path (for saving to slots)
-    juce::String currentCustomGifPath;
+    int pendingUploadSlot = -1; // Track which slot we're uploading to
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BopperAudioProcessorEditor)
 };

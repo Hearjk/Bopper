@@ -17,11 +17,11 @@ public:
     // Callback when a saved GIF slot is selected (index 0-2)
     std::function<void(int)> onSavedGifSelected;
 
-    // Callback when upload button clicked
-    std::function<void()> onUploadClicked;
+    // Callback when upload to slot is requested (slot 0-2)
+    std::function<void(int)> onUploadToSlot;
 
-    // Callback when save to slot is requested (slot 0-2)
-    std::function<void(int)> onSaveToSlot;
+    // Callback when delete from slot is requested (slot 0-2)
+    std::function<void(int)> onDeleteFromSlot;
 
     // Set the currently selected preset (-1 for none)
     void setSelectedPreset(int index);
@@ -38,7 +38,7 @@ private:
 
     std::array<std::unique_ptr<juce::TextButton>, NUM_PRESETS> presetButtons;
     std::array<std::unique_ptr<juce::TextButton>, NUM_SAVED_SLOTS> savedSlotButtons;
-    std::unique_ptr<juce::TextButton> uploadButton;
+    std::array<std::unique_ptr<juce::TextButton>, NUM_SAVED_SLOTS> deleteButtons;
 
     int selectedPresetIndex = 0;
     int selectedSavedIndex = -1;

@@ -26,16 +26,16 @@ GifSelectorComponent::GifSelectorComponent()
     // Set first preset as selected
     presetButtons[0]->setToggleState(true, juce::dontSendNotification);
 
-    // Saved GIF slots
+    // Saved GIF slots - start as "Upload" buttons
     for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
     {
-        savedSlotButtons[i] = std::make_unique<juce::TextButton>("Slot " + juce::String(i + 1));
-        savedSlotButtons[i]->setClickingTogglesState(true);
-        savedSlotButtons[i]->setRadioGroupId(1);
+        savedSlotButtons[i] = std::make_unique<juce::TextButton>("Upload");
+        savedSlotButtons[i]->setClickingTogglesState(false);
         savedSlotButtons[i]->onClick = [this, i]()
         {
             if (savedSlotHasGif[static_cast<size_t>(i)])
             {
+                // Has GIF - select it
                 selectedSavedIndex = i;
                 selectedPresetIndex = -1;
                 updateButtonStates();
@@ -44,23 +44,23 @@ GifSelectorComponent::GifSelectorComponent()
             }
             else
             {
-                // No GIF in slot - trigger save action
-                if (onSaveToSlot)
-                    onSaveToSlot(i);
-                updateButtonStates();
+                // No GIF - trigger upload to this slot
+                if (onUploadToSlot)
+                    onUploadToSlot(i);
             }
         };
         addAndMakeVisible(savedSlotButtons[i].get());
-    }
 
-    // Upload button
-    uploadButton = std::make_unique<juce::TextButton>("Upload GIF...");
-    uploadButton->onClick = [this]()
-    {
-        if (onUploadClicked)
-            onUploadClicked();
-    };
-    addAndMakeVisible(uploadButton.get());
+        // Delete buttons (hidden by default)
+        deleteButtons[i] = std::make_unique<juce::TextButton>("X");
+        deleteButtons[i]->onClick = [this, i]()
+        {
+            if (onDeleteFromSlot)
+                onDeleteFromSlot(i);
+        };
+        deleteButtons[i]->setVisible(false);
+        addAndMakeVisible(deleteButtons[i].get());
+    }
 }
 
 void GifSelectorComponent::paint(juce::Graphics& g)
@@ -72,10 +72,9 @@ void GifSelectorComponent::resized()
 {
     auto bounds = getLocalBounds();
 
-    // Top row: Presets label + preset buttons
+    // Top row: Preset buttons
     auto topRow = bounds.removeFromTop(36);
 
-    // Preset buttons
     int presetButtonWidth = (topRow.getWidth() - 10) / NUM_PRESETS;
     for (int i = 0; i < NUM_PRESETS; ++i)
     {
@@ -87,22 +86,34 @@ void GifSelectorComponent::resized()
 
     bounds.removeFromTop(8); // spacing
 
-    // Second row: Saved slots
+    // Second row: Upload/Saved slots with delete buttons
     auto savedRow = bounds.removeFromTop(36);
 
-    int savedButtonWidth = (savedRow.getWidth() - 10) / NUM_SAVED_SLOTS;
+    int totalWidth = savedRow.getWidth();
+    int slotWidth = (totalWidth - 20) / NUM_SAVED_SLOTS; // Account for spacing
+
     for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
     {
-        savedSlotButtons[i]->setBounds(
-            savedRow.removeFromLeft(savedButtonWidth).reduced(2));
+        auto slotBounds = savedRow.removeFromLeft(slotWidth).reduced(2);
+
+        if (savedSlotHasGif[static_cast<size_t>(i)])
+        {
+            // Show slot button with delete button next to it
+            auto deleteBounds = slotBounds.removeFromRight(30);
+            savedSlotButtons[i]->setBounds(slotBounds);
+            deleteButtons[i]->setBounds(deleteBounds.reduced(2));
+            deleteButtons[i]->setVisible(true);
+        }
+        else
+        {
+            // Just show upload button
+            savedSlotButtons[i]->setBounds(slotBounds);
+            deleteButtons[i]->setVisible(false);
+        }
+
         if (i < NUM_SAVED_SLOTS - 1)
-            savedRow.removeFromLeft(4); // spacing
+            savedRow.removeFromLeft(6); // spacing
     }
-
-    bounds.removeFromTop(8); // spacing
-
-    // Upload button
-    uploadButton->setBounds(bounds.reduced(2, 0).withHeight(36));
 }
 
 void GifSelectorComponent::setSelectedPreset(int index)
@@ -111,6 +122,11 @@ void GifSelectorComponent::setSelectedPreset(int index)
     {
         selectedPresetIndex = index;
         selectedSavedIndex = -1;
+        updateButtonStates();
+    }
+    else if (index < 0)
+    {
+        selectedPresetIndex = -1;
         updateButtonStates();
     }
 }
@@ -123,6 +139,11 @@ void GifSelectorComponent::setSelectedSavedSlot(int index)
         selectedPresetIndex = -1;
         updateButtonStates();
     }
+    else if (index < 0)
+    {
+        selectedSavedIndex = -1;
+        updateButtonStates();
+    }
 }
 
 void GifSelectorComponent::updateSavedSlotState(int slot, bool hasGif)
@@ -132,12 +153,19 @@ void GifSelectorComponent::updateSavedSlotState(int slot, bool hasGif)
         savedSlotHasGif[static_cast<size_t>(slot)] = hasGif;
         if (hasGif)
         {
-            savedSlotButtons[static_cast<size_t>(slot)]->setButtonText("Saved " + juce::String(slot + 1));
+            savedSlotButtons[static_cast<size_t>(slot)]->setButtonText("Slot " + juce::String(slot + 1));
+            savedSlotButtons[static_cast<size_t>(slot)]->setClickingTogglesState(true);
+            savedSlotButtons[static_cast<size_t>(slot)]->setRadioGroupId(1);
         }
         else
         {
-            savedSlotButtons[static_cast<size_t>(slot)]->setButtonText("Save to " + juce::String(slot + 1));
+            savedSlotButtons[static_cast<size_t>(slot)]->setButtonText("Upload");
+            savedSlotButtons[static_cast<size_t>(slot)]->setClickingTogglesState(false);
+            savedSlotButtons[static_cast<size_t>(slot)]->setRadioGroupId(0);
+            savedSlotButtons[static_cast<size_t>(slot)]->setToggleState(false, juce::dontSendNotification);
         }
+        // Trigger layout update for delete button visibility
+        resized();
     }
 }
 
@@ -149,6 +177,9 @@ void GifSelectorComponent::updateButtonStates()
     }
     for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
     {
-        savedSlotButtons[i]->setToggleState(i == selectedSavedIndex, juce::dontSendNotification);
+        if (savedSlotHasGif[static_cast<size_t>(i)])
+        {
+            savedSlotButtons[i]->setToggleState(i == selectedSavedIndex, juce::dontSendNotification);
+        }
     }
 }

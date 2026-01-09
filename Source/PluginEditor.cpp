@@ -18,7 +18,7 @@ BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
     bpmLabel.setJustificationType(juce::Justification::centredRight);
     addAndMakeVisible(bpmLabel);
 
-    // Speed slider (0-4 for 1x, 1/2, 1/4, 1/8, 1/16)
+    // Speed slider (0-4 for Normal, Slow, Slower, Even Slower, Slowest)
     speedSlider.setRange(0, 4, 1);
     speedSlider.setValue(audioProcessor.getSpeedDivisor());
     speedSlider.setSliderStyle(juce::Slider::LinearHorizontal);
@@ -38,27 +38,26 @@ BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
     updateSpeedLabel();
     addAndMakeVisible(speedLabel);
 
-    // Fullscreen button
-    fullscreenButton.setButtonText("Fullscreen");
-    fullscreenButton.onClick = [this]()
+    // Theater mode button
+    theaterButton.setButtonText("Theater");
+    theaterButton.onClick = [this]()
     {
-        if (isFullscreen)
-            exitFullscreen();
+        if (isTheaterMode)
+            exitTheaterMode();
         else
-            enterFullscreen();
+            enterTheaterMode();
     };
-    addAndMakeVisible(fullscreenButton);
+    addAndMakeVisible(theaterButton);
 
     // GIF display
     gifDisplay.setAnimator(&gifAnimator);
     addAndMakeVisible(gifDisplay);
 
-    // GIF selector
+    // GIF selector callbacks
     gifSelector.onPresetSelected = [this](int index)
     {
         loadPresetGif(index);
         audioProcessor.setSelectedGifIndex(index);
-        currentCustomGifPath = "";
     };
 
     gifSelector.onSavedGifSelected = [this](int slot)
@@ -66,14 +65,14 @@ BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
         loadSavedGif(slot);
     };
 
-    gifSelector.onUploadClicked = [this]()
+    gifSelector.onUploadToSlot = [this](int slot)
     {
-        openFileChooser();
+        uploadToSlot(slot);
     };
 
-    gifSelector.onSaveToSlot = [this](int slot)
+    gifSelector.onDeleteFromSlot = [this](int slot)
     {
-        saveCurrentGifToSlot(slot);
+        deleteFromSlot(slot);
     };
 
     addAndMakeVisible(gifSelector);
@@ -93,21 +92,10 @@ BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
         loadPresetGif(savedIndex);
     }
 
-    // Check for custom GIF path
-    auto customPath = audioProcessor.getCustomGifPath();
-    if (customPath.isNotEmpty())
-    {
-        juce::File customFile(customPath);
-        if (customFile.existsAsFile())
-        {
-            loadCustomGif(customFile);
-        }
-    }
-
     // Start timer for UI updates (60fps)
     startTimerHz(60);
 
-    setSize(500, 550);
+    setSize(500, 500);
 }
 
 BopperAudioProcessorEditor::~BopperAudioProcessorEditor()
@@ -122,47 +110,52 @@ void BopperAudioProcessorEditor::paint(juce::Graphics& g)
 
 void BopperAudioProcessorEditor::resized()
 {
-    auto bounds = getLocalBounds().reduced(16);
+    auto bounds = getLocalBounds();
 
-    if (isFullscreen)
+    if (isTheaterMode)
     {
-        // In fullscreen mode, just show the GIF display
+        // Theater mode: GIF fills entire area, tiny exit button in bottom right
         gifDisplay.setBounds(bounds);
         titleLabel.setVisible(false);
         bpmLabel.setVisible(false);
         speedSlider.setVisible(false);
         speedLabel.setVisible(false);
         gifSelector.setVisible(false);
-        fullscreenButton.setVisible(true);
-        fullscreenButton.setBounds(bounds.removeFromBottom(36).removeFromRight(100));
+        theaterButton.setVisible(true);
+        theaterButton.setButtonText("Exit");
+        // Small button in bottom right corner
+        theaterButton.setBounds(bounds.getWidth() - 50, bounds.getHeight() - 30, 45, 25);
         return;
     }
 
-    // Normal mode
+    // Normal mode - add padding
+    bounds = bounds.reduced(16);
+
     titleLabel.setVisible(true);
     bpmLabel.setVisible(true);
     speedSlider.setVisible(true);
     speedLabel.setVisible(true);
     gifSelector.setVisible(true);
-    fullscreenButton.setVisible(true);
+    theaterButton.setVisible(true);
+    theaterButton.setButtonText("Theater");
 
     // Header row
     auto headerRow = bounds.removeFromTop(40);
     titleLabel.setBounds(headerRow.removeFromLeft(100));
-    fullscreenButton.setBounds(headerRow.removeFromRight(100));
+    theaterButton.setBounds(headerRow.removeFromRight(80));
     bpmLabel.setBounds(headerRow);
 
     bounds.removeFromTop(8); // spacing
 
     // Speed control row
     auto speedRow = bounds.removeFromTop(30);
-    speedLabel.setBounds(speedRow.removeFromLeft(60));
+    speedLabel.setBounds(speedRow.removeFromLeft(100));
     speedSlider.setBounds(speedRow.reduced(4, 0));
 
     bounds.removeFromTop(8); // spacing
 
     // GIF display (centered, square-ish)
-    auto displayHeight = bounds.getHeight() - 140; // Leave room for selector
+    auto displayHeight = bounds.getHeight() - 90; // Leave room for selector
     gifDisplay.setBounds(bounds.removeFromTop(displayHeight).reduced(20, 0));
 
     bounds.removeFromTop(12); // spacing
@@ -191,14 +184,14 @@ void BopperAudioProcessorEditor::updateSpeedLabel()
     juce::String speedText;
     switch (divisor)
     {
-        case 0: speedText = "1x"; break;
-        case 1: speedText = "1/2"; break;
-        case 2: speedText = "1/4"; break;
-        case 3: speedText = "1/8"; break;
-        case 4: speedText = "1/16"; break;
-        default: speedText = "1x"; break;
+        case 0: speedText = "Normal"; break;
+        case 1: speedText = "Slow"; break;
+        case 2: speedText = "Slower"; break;
+        case 3: speedText = "Even Slower"; break;
+        case 4: speedText = "Slowest"; break;
+        default: speedText = "Normal"; break;
     }
-    speedLabel.setText("Speed: " + speedText, juce::dontSendNotification);
+    speedLabel.setText(speedText, juce::dontSendNotification);
 }
 
 void BopperAudioProcessorEditor::loadPresetGif(int index)
@@ -271,7 +264,6 @@ void BopperAudioProcessorEditor::loadPresetGif(int index)
 
             // Body sway
             float sway = std::sin(phase * juce::MathConstants<float>::twoPi * 2) * 10.0f;
-            float armAngle = bounce * 0.5f;
 
             // Body (rectangle)
             g.setColour(baseColor);
@@ -330,8 +322,10 @@ void BopperAudioProcessorEditor::loadPresetGif(int index)
     }
 }
 
-void BopperAudioProcessorEditor::openFileChooser()
+void BopperAudioProcessorEditor::uploadToSlot(int slot)
 {
+    pendingUploadSlot = slot;
+
     fileChooser = std::make_unique<juce::FileChooser>(
         "Select a GIF file",
         juce::File::getSpecialLocation(juce::File::userHomeDirectory),
@@ -341,25 +335,25 @@ void BopperAudioProcessorEditor::openFileChooser()
                         juce::FileBrowserComponent::canSelectFiles;
 
     fileChooser->launchAsync(chooserFlags, [this](const juce::FileChooser& fc)
-                             {
-        auto file = fc.getResult();
-        if (file.existsAsFile())
-        {
-            loadCustomGif(file);
-        } });
-}
-
-void BopperAudioProcessorEditor::loadCustomGif(const juce::File& file)
-{
-    if (gifAnimator.loadGif(file))
     {
-        currentCustomGifPath = file.getFullPathName();
-        audioProcessor.setCustomGifPath(file.getFullPathName());
-        audioProcessor.setSelectedGifIndex(-1); // Custom GIF
-        gifSelector.setSelectedPreset(-1);
-        gifSelector.setSelectedSavedSlot(-1);
-        gifDisplay.updateDisplay();
-    }
+        auto file = fc.getResult();
+        if (file.existsAsFile() && pendingUploadSlot >= 0)
+        {
+            // Save the path to this slot
+            audioProcessor.setSavedGifPath(pendingUploadSlot, file.getFullPathName());
+            gifSelector.updateSavedSlotState(pendingUploadSlot, true);
+
+            // Load and display the GIF
+            if (gifAnimator.loadGif(file))
+            {
+                audioProcessor.setSelectedGifIndex(-1);
+                gifSelector.setSelectedPreset(-1);
+                gifSelector.setSelectedSavedSlot(pendingUploadSlot);
+                gifDisplay.updateDisplay();
+            }
+        }
+        pendingUploadSlot = -1;
+    });
 }
 
 void BopperAudioProcessorEditor::loadSavedGif(int slot)
@@ -370,7 +364,6 @@ void BopperAudioProcessorEditor::loadSavedGif(int slot)
         juce::File file(path);
         if (file.existsAsFile() && gifAnimator.loadGif(file))
         {
-            currentCustomGifPath = path;
             audioProcessor.setSelectedGifIndex(-1);
             gifSelector.setSelectedPreset(-1);
             gifSelector.setSelectedSavedSlot(slot);
@@ -379,45 +372,28 @@ void BopperAudioProcessorEditor::loadSavedGif(int slot)
     }
 }
 
-void BopperAudioProcessorEditor::saveCurrentGifToSlot(int slot)
+void BopperAudioProcessorEditor::deleteFromSlot(int slot)
 {
-    if (currentCustomGifPath.isNotEmpty())
-    {
-        audioProcessor.setSavedGifPath(slot, currentCustomGifPath);
-        gifSelector.updateSavedSlotState(slot, true);
-    }
+    audioProcessor.setSavedGifPath(slot, "");
+    gifSelector.updateSavedSlotState(slot, false);
+
+    // If this slot was selected, go back to first preset
+    gifSelector.setSelectedSavedSlot(-1);
+    gifSelector.setSelectedPreset(0);
+    loadPresetGif(0);
+    audioProcessor.setSelectedGifIndex(0);
 }
 
-void BopperAudioProcessorEditor::enterFullscreen()
+void BopperAudioProcessorEditor::enterTheaterMode()
 {
-    if (auto* peer = getPeer())
-    {
-        normalBounds = getBounds();
-        isFullscreen = true;
-
-        // Get the display bounds
-        auto displays = juce::Desktop::getInstance().getDisplays();
-        auto mainDisplay = displays.getPrimaryDisplay();
-        if (mainDisplay != nullptr)
-        {
-            auto screenBounds = mainDisplay->userArea;
-            peer->setBounds(screenBounds, true);
-        }
-
-        resized();
-        fullscreenButton.setButtonText("Exit");
-    }
+    isTheaterMode = true;
+    resized();
 }
 
-void BopperAudioProcessorEditor::exitFullscreen()
+void BopperAudioProcessorEditor::exitTheaterMode()
 {
-    if (auto* peer = getPeer())
-    {
-        isFullscreen = false;
-        peer->setBounds(normalBounds, false);
-        resized();
-        fullscreenButton.setButtonText("Fullscreen");
-    }
+    isTheaterMode = false;
+    resized();
 }
 
 const std::array<BopperAudioProcessorEditor::PresetGif, 3>& BopperAudioProcessorEditor::getPresetGifs()
