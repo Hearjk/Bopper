@@ -1,5 +1,5 @@
 #include "GifDisplayComponent.h"
-#include "UI/BeatGIFLookAndFeel.h"
+#include "UI/BopperLookAndFeel.h"
 
 GifDisplayComponent::GifDisplayComponent()
 {
@@ -11,11 +11,11 @@ void GifDisplayComponent::paint(juce::Graphics& g)
     auto bounds = getLocalBounds().toFloat();
 
     // Draw background with rounded corners
-    g.setColour(BeatGIFLookAndFeel::Colors::surfaceLight);
+    g.setColour(BopperLookAndFeel::Colors::surfaceLight);
     g.fillRoundedRectangle(bounds, 12.0f);
 
     // Draw border
-    g.setColour(BeatGIFLookAndFeel::Colors::border);
+    g.setColour(BopperLookAndFeel::Colors::border);
     g.drawRoundedRectangle(bounds.reduced(0.5f), 12.0f, 1.0f);
 
     if (gifAnimator != nullptr && gifAnimator->isLoaded())
@@ -58,7 +58,7 @@ void GifDisplayComponent::paint(juce::Graphics& g)
     else
     {
         // No GIF loaded - show placeholder text
-        g.setColour(BeatGIFLookAndFeel::Colors::textDim);
+        g.setColour(BopperLookAndFeel::Colors::textDim);
         g.setFont(16.0f);
         g.drawText("Select a GIF below", bounds, juce::Justification::centred);
     }

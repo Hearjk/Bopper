@@ -44,7 +44,7 @@ void GifAnimator::loadFrames(std::vector<juce::Image>&& newFrames)
     currentFrameIndex = 0;
 }
 
-void GifAnimator::update(double bpm, double ppqPosition, bool isPlaying)
+void GifAnimator::update(double bpm, double ppqPosition, bool isPlaying, int speedDivisor)
 {
     if (frames.empty())
         return;
@@ -55,8 +55,13 @@ void GifAnimator::update(double bpm, double ppqPosition, bool isPlaying)
         return;
     }
 
+    // Apply speed divisor: divide the ppq position to slow down the animation
+    // 0 = 1x (every beat), 1 = 1/2 (every 2 beats), 2 = 1/4 (every 4 beats), etc.
+    double divisor = static_cast<double>(1 << speedDivisor); // 1, 2, 4, 8, 16
+    double adjustedPpq = ppqPosition / divisor;
+
     // Calculate beat phase (0.0 to 1.0) and map to frame index
-    double beatPhase = BpmSync::beatPhase(ppqPosition);
+    double beatPhase = BpmSync::beatPhase(adjustedPpq);
     int newFrameIndex = BpmSync::frameIndexFromPhase(beatPhase, static_cast<int>(frames.size()));
 
     currentFrameIndex = newFrameIndex;

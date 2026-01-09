@@ -1,6 +1,6 @@
-#include "BeatGIFLookAndFeel.h"
+#include "BopperLookAndFeel.h"
 
-BeatGIFLookAndFeel::BeatGIFLookAndFeel()
+BopperLookAndFeel::BopperLookAndFeel()
 {
     setColour(juce::ResizableWindow::backgroundColourId, Colors::background);
     setColour(juce::TextButton::buttonColourId, Colors::surface);
@@ -9,7 +9,7 @@ BeatGIFLookAndFeel::BeatGIFLookAndFeel()
     setColour(juce::Label::textColourId, Colors::text);
 }
 
-void BeatGIFLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
+void BopperLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
                                                const juce::Colour& backgroundColour,
                                                bool shouldDrawButtonAsHighlighted,
                                                bool shouldDrawButtonAsDown)
@@ -34,7 +34,7 @@ void BeatGIFLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& b
     g.drawRoundedRectangle(bounds, cornerSize, 1.0f);
 }
 
-void BeatGIFLookAndFeel::drawButtonText(juce::Graphics& g, juce::TextButton& button,
+void BopperLookAndFeel::drawButtonText(juce::Graphics& g, juce::TextButton& button,
                                          bool shouldDrawButtonAsHighlighted,
                                          bool shouldDrawButtonAsDown)
 {
@@ -53,7 +53,7 @@ void BeatGIFLookAndFeel::drawButtonText(juce::Graphics& g, juce::TextButton& but
     g.drawText(button.getButtonText(), bounds, juce::Justification::centred, false);
 }
 
-juce::Font BeatGIFLookAndFeel::getTextButtonFont(juce::TextButton&, int buttonHeight)
+juce::Font BopperLookAndFeel::getTextButtonFont(juce::TextButton&, int buttonHeight)
 {
     return juce::Font(juce::jmin(14.0f, static_cast<float>(buttonHeight) * 0.5f));
 }

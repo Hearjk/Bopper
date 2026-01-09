@@ -2,12 +2,13 @@
 
 #include <JuceHeader.h>
 #include <atomic>
+#include <array>
 
-class BeatGIFAudioProcessor : public juce::AudioProcessor
+class BopperAudioProcessor : public juce::AudioProcessor
 {
 public:
-    BeatGIFAudioProcessor();
-    ~BeatGIFAudioProcessor() override;
+    BopperAudioProcessor();
+    ~BopperAudioProcessor() override;
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -47,12 +48,23 @@ public:
     void setCustomGifPath(const juce::String& path) { customGifPath = path; }
     juce::String getCustomGifPath() const { return customGifPath; }
 
+    // Speed divisor (0 = 1x, 1 = 1/2, 2 = 1/4, 3 = 1/8, 4 = 1/16)
+    void setSpeedDivisor(int divisor) { speedDivisor.store(divisor); }
+    int getSpeedDivisor() const { return speedDivisor.load(); }
+
+    // Saved GIFs (3 slots)
+    static constexpr int NUM_SAVED_SLOTS = 3;
+    void setSavedGifPath(int slot, const juce::String& path);
+    juce::String getSavedGifPath(int slot) const;
+
 private:
     std::atomic<double> bpmState{120.0};
     std::atomic<double> ppqState{0.0};
     std::atomic<bool> playingState{false};
     std::atomic<int> selectedGifIndex{0};
+    std::atomic<int> speedDivisor{0};
     juce::String customGifPath;
+    std::array<juce::String, NUM_SAVED_SLOTS> savedGifPaths;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BeatGIFAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BopperAudioProcessor)
 };

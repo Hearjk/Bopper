@@ -18,7 +18,8 @@ public:
     void loadFrames(std::vector<juce::Image>&& newFrames);
 
     // Update animation state based on BPM/PPQ
-    void update(double bpm, double ppqPosition, bool isPlaying);
+    // speedDivisor: 0=1x, 1=1/2, 2=1/4, 3=1/8, 4=1/16
+    void update(double bpm, double ppqPosition, bool isPlaying, int speedDivisor = 0);
 
     // Get current frame for display
     const juce::Image& getCurrentFrame() const;

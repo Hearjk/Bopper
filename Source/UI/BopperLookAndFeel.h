@@ -2,7 +2,7 @@
 
 #include <JuceHeader.h>
 
-class BeatGIFLookAndFeel : public juce::LookAndFeel_V4
+class BopperLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
     // Modern dark color palette
@@ -19,7 +19,7 @@ public:
         static inline const juce::Colour highlight{0xFF00D9FF};    // Cyan highlight
     };
 
-    BeatGIFLookAndFeel();
+    BopperLookAndFeel();
 
     void drawButtonBackground(juce::Graphics& g, juce::Button& button,
                               const juce::Colour& backgroundColour,
