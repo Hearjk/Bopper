@@ -1,0 +1,51 @@
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#0f0f1a"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#ff2d95"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="500" height="500" fill="url(#bgGrad)" rx="12"/>
+
+  <!-- Header bar -->
+  <rect x="16" y="16" width="468" height="40" fill="#252535" rx="6"/>
+  <text x="30" y="42" font-family="sans-serif" font-size="18" font-weight="bold" fill="#e8e8e8">BOPPER</text>
+  <text x="420" y="42" font-family="sans-serif" font-size="14" fill="#00d4ff">BPM: 120</text>
+
+  <!-- Controls row -->
+  <rect x="16" y="70" width="60" height="24" fill="#252535" rx="4"/>
+  <rect x="86" y="70" width="60" height="24" fill="#252535" rx="4"/>
+  <rect x="156" y="70" width="80" height="24" fill="#252535" rx="4"/>
+  <rect x="246" y="70" width="60" height="24" fill="#00d4ff" rx="4" opacity="0.3"/>
+  <rect x="316" y="70" width="60" height="24" fill="#252535" rx="4"/>
+
+  <!-- GIF Display area -->
+  <rect x="16" y="110" width="468" height="280" fill="#1e1e2e" rx="12" stroke="#00d4ff" stroke-opacity="0.2"/>
+
+  <!-- Placeholder animation frame -->
+  <circle cx="250" cy="250" r="80" fill="none" stroke="url(#accentGrad)" stroke-width="3" opacity="0.6"/>
+  <circle cx="250" cy="250" r="50" fill="#00d4ff" opacity="0.2"/>
+  <text x="250" y="255" font-family="sans-serif" font-size="14" fill="#6a6a7a" text-anchor="middle">GIF Preview</text>
+
+  <!-- Preset buttons -->
+  <rect x="16" y="406" width="150" height="32" fill="#00d4ff" rx="4" opacity="0.3"/>
+  <rect x="176" y="406" width="150" height="32" fill="#252535" rx="4"/>
+  <rect x="336" y="406" width="150" height="32" fill="#252535" rx="4"/>
+  <text x="91" y="427" font-family="sans-serif" font-size="12" fill="#00d4ff" text-anchor="middle">SpongeBob</text>
+  <text x="251" y="427" font-family="sans-serif" font-size="12" fill="#888" text-anchor="middle">Gandalf</text>
+  <text x="411" y="427" font-family="sans-serif" font-size="12" fill="#888" text-anchor="middle">Dance Band</text>
+
+  <!-- Upload slots -->
+  <rect x="16" y="450" width="150" height="32" fill="#252535" rx="4"/>
+  <rect x="176" y="450" width="150" height="32" fill="#252535" rx="4"/>
+  <rect x="336" y="450" width="150" height="32" fill="#252535" rx="4"/>
+  <text x="91" y="471" font-family="sans-serif" font-size="12" fill="#6a6a7a" text-anchor="middle">Upload</text>
+  <text x="251" y="471" font-family="sans-serif" font-size="12" fill="#6a6a7a" text-anchor="middle">Upload</text>
+  <text x="411" y="471" font-family="sans-serif" font-size="12" fill="#6a6a7a" text-anchor="middle">Upload</text>
+</svg>
