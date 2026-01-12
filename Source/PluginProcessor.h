@@ -4,6 +4,17 @@
 #include <atomic>
 #include <array>
 
+// Effect types
+enum class ColorFilterType
+{
+    None = 0,
+    Invert,
+    Sepia,
+    Cyberpunk,  // Cyan/pink tint
+    Vaporwave,  // Purple/pink tint
+    Matrix      // Green tint
+};
+
 class BopperAudioProcessor : public juce::AudioProcessor
 {
 public:
@@ -57,6 +68,22 @@ public:
     void setSavedGifPath(int slot, const juce::String& path);
     juce::String getSavedGifPath(int slot) const;
 
+    // Effects
+    void setReverseEnabled(bool enabled) { reverseEnabled.store(enabled); }
+    bool getReverseEnabled() const { return reverseEnabled.load(); }
+
+    void setPingPongEnabled(bool enabled) { pingPongEnabled.store(enabled); }
+    bool getPingPongEnabled() const { return pingPongEnabled.load(); }
+
+    void setColorFilter(ColorFilterType filter) { colorFilter.store(static_cast<int>(filter)); }
+    ColorFilterType getColorFilter() const { return static_cast<ColorFilterType>(colorFilter.load()); }
+
+    void setPulseEnabled(bool enabled) { pulseEnabled.store(enabled); }
+    bool getPulseEnabled() const { return pulseEnabled.load(); }
+
+    void setShakeEnabled(bool enabled) { shakeEnabled.store(enabled); }
+    bool getShakeEnabled() const { return shakeEnabled.load(); }
+
 private:
     std::atomic<double> bpmState{120.0};
     std::atomic<double> ppqState{0.0};
@@ -65,6 +92,13 @@ private:
     std::atomic<int> speedDivisor{0};
     juce::String customGifPath;
     std::array<juce::String, NUM_SAVED_SLOTS> savedGifPaths;
+
+    // Effects state
+    std::atomic<bool> reverseEnabled{false};
+    std::atomic<bool> pingPongEnabled{false};
+    std::atomic<int> colorFilter{0};
+    std::atomic<bool> pulseEnabled{false};
+    std::atomic<bool> shakeEnabled{false};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BopperAudioProcessor)
 };

@@ -3,9 +3,9 @@
 
 GifSelectorComponent::GifSelectorComponent()
 {
-    // Preset names: Cat, Heart, Dance (SpongeBob)
+    // Preset names: SpongeBob, Gandalf, Dance Band
     const char* presetNames[NUM_PRESETS] = {
-        "Cat", "Heart", "Dance"};
+        "SpongeBob", "Gandalf", "Dance Band"};
 
     for (int i = 0; i < NUM_PRESETS; ++i)
     {
@@ -90,18 +90,22 @@ void GifSelectorComponent::resized()
     auto savedRow = bounds.removeFromTop(36);
 
     int totalWidth = savedRow.getWidth();
-    int slotWidth = (totalWidth - 20) / NUM_SAVED_SLOTS; // Account for spacing
+    int spacing = 8;
+    int availableWidth = totalWidth - (spacing * (NUM_SAVED_SLOTS - 1));
+    int slotWidth = availableWidth / NUM_SAVED_SLOTS;
 
     for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
     {
-        auto slotBounds = savedRow.removeFromLeft(slotWidth).reduced(2);
+        int xPos = i * (slotWidth + spacing);
+        auto slotBounds = juce::Rectangle<int>(savedRow.getX() + xPos, savedRow.getY(),
+                                                slotWidth, savedRow.getHeight()).reduced(2);
 
         if (savedSlotHasGif[static_cast<size_t>(i)])
         {
             // Show slot button with delete button next to it
-            auto deleteBounds = slotBounds.removeFromRight(30);
+            auto deleteBounds = slotBounds.removeFromRight(28);
             savedSlotButtons[i]->setBounds(slotBounds);
-            deleteButtons[i]->setBounds(deleteBounds.reduced(2));
+            deleteButtons[i]->setBounds(deleteBounds.reduced(1));
             deleteButtons[i]->setVisible(true);
         }
         else
@@ -110,9 +114,6 @@ void GifSelectorComponent::resized()
             savedSlotButtons[i]->setBounds(slotBounds);
             deleteButtons[i]->setVisible(false);
         }
-
-        if (i < NUM_SAVED_SLOTS - 1)
-            savedRow.removeFromLeft(6); // spacing
     }
 }
 

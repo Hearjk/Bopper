@@ -156,8 +156,16 @@ void BopperAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     state.setProperty("customGifPath", customGifPath, nullptr);
     state.setProperty("speedDivisor", speedDivisor.load(), nullptr);
 
+    // Save slot paths
     for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
         state.setProperty("savedGif" + juce::String(i), savedGifPaths[static_cast<size_t>(i)], nullptr);
+
+    // Save effects state
+    state.setProperty("reverseEnabled", reverseEnabled.load(), nullptr);
+    state.setProperty("pingPongEnabled", pingPongEnabled.load(), nullptr);
+    state.setProperty("colorFilter", colorFilter.load(), nullptr);
+    state.setProperty("pulseEnabled", pulseEnabled.load(), nullptr);
+    state.setProperty("shakeEnabled", shakeEnabled.load(), nullptr);
 
     juce::MemoryOutputStream stream(destData, false);
     state.writeToStream(stream);
@@ -175,6 +183,13 @@ void BopperAudioProcessor::setStateInformation(const void* data, int sizeInBytes
 
         for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
             savedGifPaths[static_cast<size_t>(i)] = state.getProperty("savedGif" + juce::String(i), "").toString();
+
+        // Load effects state
+        reverseEnabled.store(state.getProperty("reverseEnabled", false));
+        pingPongEnabled.store(state.getProperty("pingPongEnabled", false));
+        colorFilter.store(state.getProperty("colorFilter", 0));
+        pulseEnabled.store(state.getProperty("pulseEnabled", false));
+        shakeEnabled.store(state.getProperty("shakeEnabled", false));
     }
 }
 

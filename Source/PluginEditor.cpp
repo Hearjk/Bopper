@@ -5,16 +5,16 @@ BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
 {
     setLookAndFeel(&lookAndFeel);
 
-    // Title
-    titleLabel.setText("Bopper", juce::dontSendNotification);
-    titleLabel.setFont(juce::Font(24.0f, juce::Font::bold));
+    // Title - thin futuristic font
+    titleLabel.setText("BOPPER", juce::dontSendNotification);
+    titleLabel.setFont(BopperLookAndFeel::getTechFont(22.0f));
     titleLabel.setColour(juce::Label::textColourId, BopperLookAndFeel::Colors::text);
     addAndMakeVisible(titleLabel);
 
-    // BPM display
+    // BPM display - thin futuristic font
     bpmLabel.setText("BPM: 120", juce::dontSendNotification);
-    bpmLabel.setFont(juce::Font(16.0f));
-    bpmLabel.setColour(juce::Label::textColourId, BopperLookAndFeel::Colors::highlight);
+    bpmLabel.setFont(BopperLookAndFeel::getTechFont(14.0f));
+    bpmLabel.setColour(juce::Label::textColourId, BopperLookAndFeel::Colors::neonCyan);
     bpmLabel.setJustificationType(juce::Justification::centredRight);
     addAndMakeVisible(bpmLabel);
 
@@ -31,12 +31,74 @@ BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
     };
     addAndMakeVisible(speedSlider);
 
-    // Speed label
-    speedLabel.setFont(juce::Font(12.0f));
+    // Speed label - thin futuristic font
+    speedLabel.setFont(BopperLookAndFeel::getTechFont(11.0f));
     speedLabel.setColour(juce::Label::textColourId, BopperLookAndFeel::Colors::textDim);
     speedLabel.setJustificationType(juce::Justification::centred);
     updateSpeedLabel();
     addAndMakeVisible(speedLabel);
+
+    // Effects controls
+    reverseButton.setButtonText("REV");
+    reverseButton.setClickingTogglesState(true);
+    reverseButton.setToggleState(audioProcessor.getReverseEnabled(), juce::dontSendNotification);
+    reverseButton.onClick = [this]()
+    {
+        audioProcessor.setReverseEnabled(reverseButton.getToggleState());
+        // Disable ping-pong if reverse is enabled (mutually exclusive)
+        if (reverseButton.getToggleState())
+        {
+            pingPongButton.setToggleState(false, juce::dontSendNotification);
+            audioProcessor.setPingPongEnabled(false);
+        }
+    };
+    addAndMakeVisible(reverseButton);
+
+    pingPongButton.setButtonText("PING");
+    pingPongButton.setClickingTogglesState(true);
+    pingPongButton.setToggleState(audioProcessor.getPingPongEnabled(), juce::dontSendNotification);
+    pingPongButton.onClick = [this]()
+    {
+        audioProcessor.setPingPongEnabled(pingPongButton.getToggleState());
+        // Disable reverse if ping-pong is enabled (mutually exclusive)
+        if (pingPongButton.getToggleState())
+        {
+            reverseButton.setToggleState(false, juce::dontSendNotification);
+            audioProcessor.setReverseEnabled(false);
+        }
+    };
+    addAndMakeVisible(pingPongButton);
+
+    colorFilterCombo.addItem("None", 1);
+    colorFilterCombo.addItem("Invert", 2);
+    colorFilterCombo.addItem("Sepia", 3);
+    colorFilterCombo.addItem("Cyber", 4);
+    colorFilterCombo.addItem("Vapor", 5);
+    colorFilterCombo.addItem("Matrix", 6);
+    colorFilterCombo.setSelectedId(static_cast<int>(audioProcessor.getColorFilter()) + 1, juce::dontSendNotification);
+    colorFilterCombo.onChange = [this]()
+    {
+        audioProcessor.setColorFilter(static_cast<ColorFilterType>(colorFilterCombo.getSelectedId() - 1));
+    };
+    addAndMakeVisible(colorFilterCombo);
+
+    pulseButton.setButtonText("PULSE");
+    pulseButton.setClickingTogglesState(true);
+    pulseButton.setToggleState(audioProcessor.getPulseEnabled(), juce::dontSendNotification);
+    pulseButton.onClick = [this]()
+    {
+        audioProcessor.setPulseEnabled(pulseButton.getToggleState());
+    };
+    addAndMakeVisible(pulseButton);
+
+    shakeButton.setButtonText("SHAKE");
+    shakeButton.setClickingTogglesState(true);
+    shakeButton.setToggleState(audioProcessor.getShakeEnabled(), juce::dontSendNotification);
+    shakeButton.onClick = [this]()
+    {
+        audioProcessor.setShakeEnabled(shakeButton.getToggleState());
+    };
+    addAndMakeVisible(shakeButton);
 
     // Theater mode button
     theaterButton.setButtonText("Theater");
@@ -48,6 +110,11 @@ BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
             enterTheaterMode();
     };
     addAndMakeVisible(theaterButton);
+
+    // Theater mode banner (hidden by default)
+    theaterBannerLabel.setColour(juce::Label::backgroundColourId, juce::Colour(0xDD1a1a2e));
+    theaterBannerLabel.setVisible(false);
+    addAndMakeVisible(theaterBannerLabel);
 
     // GIF display
     gifDisplay.setAnimator(&gifAnimator);
@@ -114,19 +181,43 @@ void BopperAudioProcessorEditor::resized()
 
     if (isTheaterMode)
     {
-        // Theater mode: GIF fills entire area, tiny exit button in bottom right
+        // Theater mode: GIF fills area above banner, banner at bottom
+        const int bannerHeight = 50;
+        auto bannerBounds = bounds.removeFromBottom(bannerHeight);
+
+        // GIF display fills remaining space
         gifDisplay.setBounds(bounds);
+
+        // Hide normal UI elements
         titleLabel.setVisible(false);
         bpmLabel.setVisible(false);
         speedSlider.setVisible(false);
         speedLabel.setVisible(false);
+        reverseButton.setVisible(false);
+        pingPongButton.setVisible(false);
+        colorFilterCombo.setVisible(false);
+        pulseButton.setVisible(false);
+        shakeButton.setVisible(false);
         gifSelector.setVisible(false);
+
+        // Show theater banner and exit button
+        theaterBannerLabel.setVisible(true);
+        theaterBannerLabel.setBounds(bannerBounds);
+
         theaterButton.setVisible(true);
-        theaterButton.setButtonText("Exit");
-        // Small button in bottom right corner
-        theaterButton.setBounds(bounds.getWidth() - 50, bounds.getHeight() - 30, 45, 25);
+        theaterButton.setButtonText("Exit Theater Mode");
+        int buttonWidth = 140;
+        int buttonHeight = 32;
+        theaterButton.setBounds(
+            bannerBounds.getCentreX() - buttonWidth / 2,
+            bannerBounds.getCentreY() - buttonHeight / 2,
+            buttonWidth, buttonHeight);
+        theaterButton.toFront(false); // Bring button above banner
         return;
     }
+
+    // Hide theater banner in normal mode
+    theaterBannerLabel.setVisible(false);
 
     // Normal mode - add padding
     bounds = bounds.reduced(16);
@@ -135,6 +226,11 @@ void BopperAudioProcessorEditor::resized()
     bpmLabel.setVisible(true);
     speedSlider.setVisible(true);
     speedLabel.setVisible(true);
+    reverseButton.setVisible(true);
+    pingPongButton.setVisible(true);
+    colorFilterCombo.setVisible(true);
+    pulseButton.setVisible(true);
+    shakeButton.setVisible(true);
     gifSelector.setVisible(true);
     theaterButton.setVisible(true);
     theaterButton.setButtonText("Theater");
@@ -149,14 +245,30 @@ void BopperAudioProcessorEditor::resized()
 
     // Speed control row
     auto speedRow = bounds.removeFromTop(30);
-    speedLabel.setBounds(speedRow.removeFromLeft(100));
+    speedLabel.setBounds(speedRow.removeFromLeft(80));
     speedSlider.setBounds(speedRow.reduced(4, 0));
+
+    bounds.removeFromTop(6); // spacing
+
+    // Effects row
+    auto effectsRow = bounds.removeFromTop(28);
+    int buttonWidth = 50;
+    int spacing = 6;
+    reverseButton.setBounds(effectsRow.removeFromLeft(buttonWidth));
+    effectsRow.removeFromLeft(spacing);
+    pingPongButton.setBounds(effectsRow.removeFromLeft(buttonWidth));
+    effectsRow.removeFromLeft(spacing);
+    colorFilterCombo.setBounds(effectsRow.removeFromLeft(80));
+    effectsRow.removeFromLeft(spacing);
+    pulseButton.setBounds(effectsRow.removeFromLeft(55));
+    effectsRow.removeFromLeft(spacing);
+    shakeButton.setBounds(effectsRow.removeFromLeft(55));
 
     bounds.removeFromTop(8); // spacing
 
-    // GIF display (centered, square-ish)
+    // GIF display (full width to align with buttons)
     auto displayHeight = bounds.getHeight() - 90; // Leave room for selector
-    gifDisplay.setBounds(bounds.removeFromTop(displayHeight).reduced(20, 0));
+    gifDisplay.setBounds(bounds.removeFromTop(displayHeight));
 
     bounds.removeFromTop(12); // spacing
 
@@ -170,9 +282,18 @@ void BopperAudioProcessorEditor::timerCallback()
     double bpm = audioProcessor.getBpm();
     bpmLabel.setText("BPM: " + juce::String(static_cast<int>(bpm)), juce::dontSendNotification);
 
-    // Update animation with speed divisor
+    // Update animation with speed divisor and direction effects
     int speedDiv = audioProcessor.getSpeedDivisor();
-    gifAnimator.update(bpm, audioProcessor.getPpqPosition(), audioProcessor.isHostPlaying(), speedDiv);
+    bool reverse = audioProcessor.getReverseEnabled();
+    bool pingPong = audioProcessor.getPingPongEnabled();
+    gifAnimator.update(bpm, audioProcessor.getPpqPosition(), audioProcessor.isHostPlaying(),
+                       speedDiv, reverse, pingPong);
+
+    // Pass effect settings to display
+    gifDisplay.setEffects(audioProcessor.getColorFilter(),
+                          audioProcessor.getPulseEnabled(),
+                          audioProcessor.getShakeEnabled(),
+                          gifAnimator.getCurrentBeatPhase());
 
     // Repaint GIF display
     gifDisplay.updateDisplay();
@@ -196,20 +317,62 @@ void BopperAudioProcessorEditor::updateSpeedLabel()
 
 void BopperAudioProcessorEditor::loadPresetGif(int index)
 {
-    // Generate a simple animated pattern based on index
-    const int frameCount = 8;
-    const int size = 200;
-
-    std::vector<juce::Image> frames;
-
-    // Color palette for different presets
-    juce::Colour colors[] = {
-        juce::Colour(0xFFFF6B6B), // Cat - Red
-        juce::Colour(0xFFFF6B6B), // Heart - Red
-        juce::Colour(0xFFFFE135)  // Dance - Yellow (SpongeBob-ish)
+    // Preset gif filenames: SpongeBob, Gandalf, Dance Band
+    const char* presetFiles[] = {
+        "spongebob.gif",
+        "gandalf.gif",
+        "Dance Band GIF.gif"
     };
 
-    juce::Colour baseColor = colors[index % 3];
+    if (index < 0 || index >= 3)
+        return;
+
+    // Try to find the gifs folder in various locations
+    juce::File gifsFolder;
+
+    // Try user's Documents/Bopper/gifs
+    auto docsFolder = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                          .getChildFile("Bopper").getChildFile("gifs");
+    if (docsFolder.isDirectory())
+        gifsFolder = docsFolder;
+
+    // Try user's Desktop/Bopper/gifs (for development)
+    if (!gifsFolder.isDirectory())
+    {
+        auto desktopFolder = juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
+                                .getChildFile("Bopper").getChildFile("gifs");
+        if (desktopFolder.isDirectory())
+            gifsFolder = desktopFolder;
+    }
+
+    // Try Application Data/Bopper/gifs
+    if (!gifsFolder.isDirectory())
+    {
+        auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                                .getChildFile("Bopper").getChildFile("gifs");
+        if (appDataFolder.isDirectory())
+            gifsFolder = appDataFolder;
+    }
+
+    if (gifsFolder.isDirectory())
+    {
+        juce::File gifFile = gifsFolder.getChildFile(presetFiles[index]);
+        if (gifFile.existsAsFile())
+        {
+            if (gifAnimator.loadGif(gifFile))
+            {
+                gifDisplay.updateDisplay();
+                return;
+            }
+        }
+    }
+
+    // Fallback: generate a simple placeholder if gif not found
+    const int frameCount = 8;
+    const int size = 200;
+    std::vector<juce::Image> frames;
+
+    juce::Colour baseColor = juce::Colour(0xFF00D4FF); // Cyan placeholder
 
     for (int frame = 0; frame < frameCount; ++frame)
     {
@@ -218,108 +381,20 @@ void BopperAudioProcessorEditor::loadPresetGif(int index)
 
         float phase = static_cast<float>(frame) / frameCount;
         float bounce = std::sin(phase * juce::MathConstants<float>::twoPi);
+        float y = size / 2.0f + bounce * 20.0f;
 
-        switch (index)
-        {
-        case 0: // Cat - bouncing circle with ears
-        {
-            float y = size / 2.0f + bounce * 30.0f;
-            g.setColour(baseColor);
-            g.fillEllipse(size / 2.0f - 50, y - 50, 100, 100);
-            // Ears
-            g.fillEllipse(size / 2.0f - 55, y - 70, 30, 40);
-            g.fillEllipse(size / 2.0f + 25, y - 70, 30, 40);
-            // Eyes
-            g.setColour(juce::Colours::white);
-            g.fillEllipse(size / 2.0f - 25, y - 20, 20, 25);
-            g.fillEllipse(size / 2.0f + 5, y - 20, 20, 25);
-            g.setColour(juce::Colours::black);
-            g.fillEllipse(size / 2.0f - 20, y - 15, 10, 15);
-            g.fillEllipse(size / 2.0f + 10, y - 15, 10, 15);
-            break;
-        }
-        case 1: // Heart - pulsing heart
-        {
-            float scale = 1.0f + bounce * 0.2f;
-            float cx = size / 2.0f;
-            float cy = size / 2.0f;
+        g.setColour(baseColor.withAlpha(0.3f));
+        g.fillEllipse(size / 2.0f - 60, y - 60, 120, 120);
 
-            juce::Path heart;
-            heart.startNewSubPath(cx, cy + 30 * scale);
-            heart.cubicTo(cx - 50 * scale, cy - 20 * scale,
-                          cx - 50 * scale, cy - 50 * scale,
-                          cx, cy - 30 * scale);
-            heart.cubicTo(cx + 50 * scale, cy - 50 * scale,
-                          cx + 50 * scale, cy - 20 * scale,
-                          cx, cy + 30 * scale);
-
-            g.setColour(baseColor);
-            g.fillPath(heart);
-            break;
-        }
-        case 2: // Dance - dancing figure (SpongeBob-style)
-        {
-            float cx = size / 2.0f;
-            float cy = size / 2.0f;
-
-            // Body sway
-            float sway = std::sin(phase * juce::MathConstants<float>::twoPi * 2) * 10.0f;
-
-            // Body (rectangle)
-            g.setColour(baseColor);
-            juce::Path body;
-            body.addRoundedRectangle(cx - 25 + sway * 0.3f, cy - 30, 50, 60, 8);
-            g.fillPath(body);
-
-            // Head
-            g.fillEllipse(cx - 20 + sway * 0.5f, cy - 60, 40, 35);
-
-            // Eyes
-            g.setColour(juce::Colours::white);
-            g.fillEllipse(cx - 12 + sway * 0.5f, cy - 55, 12, 15);
-            g.fillEllipse(cx + 2 + sway * 0.5f, cy - 55, 12, 15);
-            g.setColour(juce::Colour(0xFF87CEEB)); // Light blue
-            g.fillEllipse(cx - 9 + sway * 0.5f, cy - 52, 6, 9);
-            g.fillEllipse(cx + 5 + sway * 0.5f, cy - 52, 6, 9);
-
-            // Smile
-            g.setColour(juce::Colours::white);
-            juce::Path smile;
-            smile.addArc(cx - 10 + sway * 0.5f, cy - 45, 20, 15, 0.2f, juce::MathConstants<float>::pi - 0.2f, true);
-            g.strokePath(smile, juce::PathStrokeType(2.0f));
-
-            // Arms (waving)
-            g.setColour(baseColor);
-            // Left arm
-            float leftArmY = cy - 10 + std::sin((phase + 0.25f) * juce::MathConstants<float>::twoPi) * 20;
-            g.drawLine(cx - 25 + sway * 0.3f, cy - 10, cx - 50, leftArmY, 8.0f);
-            // Right arm
-            float rightArmY = cy - 10 + std::sin((phase + 0.75f) * juce::MathConstants<float>::twoPi) * 20;
-            g.drawLine(cx + 25 + sway * 0.3f, cy - 10, cx + 50, rightArmY, 8.0f);
-
-            // Legs
-            g.setColour(juce::Colour(0xFF8B4513)); // Brown pants
-            g.fillRect(cx - 20 + sway * 0.3f, cy + 30, 15.0f, 30.0f);
-            g.fillRect(cx + 5 + sway * 0.3f, cy + 30, 15.0f, 30.0f);
-
-            // Feet bounce
-            float footBounce = std::abs(bounce) * 5;
-            g.setColour(juce::Colours::black);
-            g.fillEllipse(cx - 22 + sway * 0.3f, cy + 55 + footBounce, 20, 10);
-            g.fillEllipse(cx + 3 + sway * 0.3f, cy + 55 - footBounce, 20, 10);
-            break;
-        }
-        }
+        g.setColour(baseColor);
+        g.setFont(14.0f);
+        g.drawText("GIF Not Found", 0, size / 2 - 10, size, 20, juce::Justification::centred);
 
         frames.push_back(std::move(img));
     }
 
-    // Load the generated frames into the animator
-    if (!frames.empty())
-    {
-        gifAnimator.loadFrames(std::move(frames));
-        gifDisplay.updateDisplay();
-    }
+    gifAnimator.loadFrames(std::move(frames));
+    gifDisplay.updateDisplay();
 }
 
 void BopperAudioProcessorEditor::uploadToSlot(int slot)
@@ -339,17 +414,19 @@ void BopperAudioProcessorEditor::uploadToSlot(int slot)
         auto file = fc.getResult();
         if (file.existsAsFile() && pendingUploadSlot >= 0)
         {
-            // Save the path to this slot
-            audioProcessor.setSavedGifPath(pendingUploadSlot, file.getFullPathName());
-            gifSelector.updateSavedSlotState(pendingUploadSlot, true);
-
-            // Load and display the GIF
+            // Try to load the GIF first before updating state
             if (gifAnimator.loadGif(file))
             {
+                // Save the path to this slot only after successful load
+                audioProcessor.setSavedGifPath(pendingUploadSlot, file.getFullPathName());
+                gifSelector.updateSavedSlotState(pendingUploadSlot, true);
+
+                // Update selection state
                 audioProcessor.setSelectedGifIndex(-1);
                 gifSelector.setSelectedPreset(-1);
                 gifSelector.setSelectedSavedSlot(pendingUploadSlot);
                 gifDisplay.updateDisplay();
+                repaint();
             }
         }
         pendingUploadSlot = -1;
@@ -398,11 +475,11 @@ void BopperAudioProcessorEditor::exitTheaterMode()
 
 const std::array<BopperAudioProcessorEditor::PresetGif, 3>& BopperAudioProcessorEditor::getPresetGifs()
 {
-    // Placeholder - in production, this would return actual embedded GIF data
+    // Preset names - actual files loaded from gifs folder
     static std::array<PresetGif, 3> presets = {{
-        {"Cat", nullptr, 0},
-        {"Heart", nullptr, 0},
-        {"Dance", nullptr, 0},
+        {"SpongeBob", nullptr, 0},
+        {"Gandalf", nullptr, 0},
+        {"Dance Band", nullptr, 0},
     }};
     return presets;
 }

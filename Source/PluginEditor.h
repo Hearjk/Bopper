@@ -55,8 +55,16 @@ private:
     juce::Slider speedSlider;
     juce::Label speedLabel;
 
-    // Theater mode button
+    // Effects controls
+    juce::TextButton reverseButton;
+    juce::TextButton pingPongButton;
+    juce::ComboBox colorFilterCombo;
+    juce::TextButton pulseButton;
+    juce::TextButton shakeButton;
+
+    // Theater mode button and banner
     juce::TextButton theaterButton;
+    juce::Label theaterBannerLabel;
     bool isTheaterMode = false;
 
     // For file browsing
