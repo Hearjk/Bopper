@@ -153,33 +153,13 @@ header {
         0 0 120px rgba(0, 212, 255, 0.2);
 }
 
-.app-image {
+.app-image,
+.app-video {
     display: block;
     max-width: 380px;
     width: 100%;
     height: auto;
     border-radius: 10px;
-}
-
-.glow-ring {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 120%;
-    height: 120%;
-    border: 2px solid transparent;
-    border-radius: 50%;
-    background: linear-gradient(var(--bg-dark), var(--bg-dark)) padding-box,
-                linear-gradient(135deg, var(--neon-cyan), transparent, var(--neon-pink)) border-box;
-    opacity: 0.3;
-    pointer-events: none;
-    animation: rotate 20s linear infinite;
-}
-
-@keyframes rotate {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 /* Features */
