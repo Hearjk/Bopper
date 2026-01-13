@@ -250,6 +250,40 @@ header {
     letter-spacing: 0.1em;
 }
 
+/* Web App Button */
+.webapp-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: rgba(255, 45, 149, 0.1);
+    border: 1px solid var(--neon-pink);
+    border-radius: 30px;
+    color: var(--neon-pink);
+    text-decoration: none;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    transition: all 0.3s ease;
+}
+
+.webapp-button:hover {
+    background: rgba(255, 45, 149, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255, 45, 149, 0.3);
+}
+
+.webapp-badge {
+    background: var(--neon-pink);
+    color: var(--bg-dark);
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
 /* Button Group */
 .button-group {
     display: flex;
