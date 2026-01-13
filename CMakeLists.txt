@@ -4,6 +4,9 @@ project(Bopper VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Build Universal Binary for both Intel and Apple Silicon
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+
 # Add JUCE
 add_subdirectory(JUCE)
 
