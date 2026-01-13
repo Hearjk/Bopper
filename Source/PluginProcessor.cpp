@@ -1,78 +1,78 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-BeatGIFAudioProcessor::BeatGIFAudioProcessor()
+BopperAudioProcessor::BopperAudioProcessor()
     : AudioProcessor(BusesProperties()
                      .withInput("Input", juce::AudioChannelSet::stereo(), true)
                      .withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
 }
 
-BeatGIFAudioProcessor::~BeatGIFAudioProcessor()
+BopperAudioProcessor::~BopperAudioProcessor()
 {
 }
 
-const juce::String BeatGIFAudioProcessor::getName() const
+const juce::String BopperAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool BeatGIFAudioProcessor::acceptsMidi() const
+bool BopperAudioProcessor::acceptsMidi() const
 {
     return false;
 }
 
-bool BeatGIFAudioProcessor::producesMidi() const
+bool BopperAudioProcessor::producesMidi() const
 {
     return false;
 }
 
-bool BeatGIFAudioProcessor::isMidiEffect() const
+bool BopperAudioProcessor::isMidiEffect() const
 {
     return false;
 }
 
-double BeatGIFAudioProcessor::getTailLengthSeconds() const
+double BopperAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int BeatGIFAudioProcessor::getNumPrograms()
+int BopperAudioProcessor::getNumPrograms()
 {
     return 1;
 }
 
-int BeatGIFAudioProcessor::getCurrentProgram()
+int BopperAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void BeatGIFAudioProcessor::setCurrentProgram(int index)
+void BopperAudioProcessor::setCurrentProgram(int index)
 {
     juce::ignoreUnused(index);
 }
 
-const juce::String BeatGIFAudioProcessor::getProgramName(int index)
+const juce::String BopperAudioProcessor::getProgramName(int index)
 {
     juce::ignoreUnused(index);
     return {};
 }
 
-void BeatGIFAudioProcessor::changeProgramName(int index, const juce::String& newName)
+void BopperAudioProcessor::changeProgramName(int index, const juce::String& newName)
 {
     juce::ignoreUnused(index, newName);
 }
 
-void BeatGIFAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+void BopperAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     juce::ignoreUnused(sampleRate, samplesPerBlock);
 }
 
-void BeatGIFAudioProcessor::releaseResources()
+void BopperAudioProcessor::releaseResources()
 {
 }
 
-bool BeatGIFAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+bool BopperAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
         && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
@@ -84,7 +84,7 @@ bool BeatGIFAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) c
     return true;
 }
 
-void BeatGIFAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
+void BopperAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                           juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused(midiMessages);
@@ -126,27 +126,52 @@ void BeatGIFAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     ppqState.store(ppqPosition);
 }
 
-bool BeatGIFAudioProcessor::hasEditor() const
+bool BopperAudioProcessor::hasEditor() const
 {
     return true;
 }
 
-juce::AudioProcessorEditor* BeatGIFAudioProcessor::createEditor()
+juce::AudioProcessorEditor* BopperAudioProcessor::createEditor()
 {
-    return new BeatGIFAudioProcessorEditor(*this);
+    return new BopperAudioProcessorEditor(*this);
 }
 
-void BeatGIFAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
+void BopperAudioProcessor::setSavedGifPath(int slot, const juce::String& path)
 {
-    juce::ValueTree state("BeatGIFState");
+    if (slot >= 0 && slot < NUM_SAVED_SLOTS)
+        savedGifPaths[static_cast<size_t>(slot)] = path;
+}
+
+juce::String BopperAudioProcessor::getSavedGifPath(int slot) const
+{
+    if (slot >= 0 && slot < NUM_SAVED_SLOTS)
+        return savedGifPaths[static_cast<size_t>(slot)];
+    return {};
+}
+
+void BopperAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
+{
+    juce::ValueTree state("BopperState");
     state.setProperty("selectedGif", selectedGifIndex.load(), nullptr);
     state.setProperty("customGifPath", customGifPath, nullptr);
+    state.setProperty("speedDivisor", speedDivisor.load(), nullptr);
+
+    // Save slot paths
+    for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
+        state.setProperty("savedGif" + juce::String(i), savedGifPaths[static_cast<size_t>(i)], nullptr);
+
+    // Save effects state
+    state.setProperty("reverseEnabled", reverseEnabled.load(), nullptr);
+    state.setProperty("pingPongEnabled", pingPongEnabled.load(), nullptr);
+    state.setProperty("colorFilter", colorFilter.load(), nullptr);
+    state.setProperty("pulseEnabled", pulseEnabled.load(), nullptr);
+    state.setProperty("shakeEnabled", shakeEnabled.load(), nullptr);
 
     juce::MemoryOutputStream stream(destData, false);
     state.writeToStream(stream);
 }
 
-void BeatGIFAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
+void BopperAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     juce::ValueTree state = juce::ValueTree::readFromData(data, static_cast<size_t>(sizeInBytes));
 
@@ -154,10 +179,21 @@ void BeatGIFAudioProcessor::setStateInformation(const void* data, int sizeInByte
     {
         selectedGifIndex.store(state.getProperty("selectedGif", 0));
         customGifPath = state.getProperty("customGifPath", "").toString();
+        speedDivisor.store(state.getProperty("speedDivisor", 0));
+
+        for (int i = 0; i < NUM_SAVED_SLOTS; ++i)
+            savedGifPaths[static_cast<size_t>(i)] = state.getProperty("savedGif" + juce::String(i), "").toString();
+
+        // Load effects state
+        reverseEnabled.store(state.getProperty("reverseEnabled", false));
+        pingPongEnabled.store(state.getProperty("pingPongEnabled", false));
+        colorFilter.store(state.getProperty("colorFilter", 0));
+        pulseEnabled.store(state.getProperty("pulseEnabled", false));
+        shakeEnabled.store(state.getProperty("shakeEnabled", false));
     }
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new BeatGIFAudioProcessor();
+    return new BopperAudioProcessor();
 }

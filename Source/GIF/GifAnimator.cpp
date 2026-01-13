@@ -44,22 +44,58 @@ void GifAnimator::loadFrames(std::vector<juce::Image>&& newFrames)
     currentFrameIndex = 0;
 }
 
-void GifAnimator::update(double bpm, double ppqPosition, bool isPlaying)
+void GifAnimator::update(double bpm, double ppqPosition, bool isPlaying,
+                          int speedDivisor, bool reverse, bool pingPong)
 {
     if (frames.empty())
         return;
 
     if (!isPlaying)
     {
-        // When not playing, stay on current frame or first frame
+        // When not playing, stay on current frame
         return;
     }
 
-    // Calculate beat phase (0.0 to 1.0) and map to frame index
-    double beatPhase = BpmSync::beatPhase(ppqPosition);
-    int newFrameIndex = BpmSync::frameIndexFromPhase(beatPhase, static_cast<int>(frames.size()));
+    // Apply speed divisor: divide the ppq position to slow down the animation
+    double divisor = static_cast<double>(1 << speedDivisor); // 1, 2, 4, 8, 16
+    double adjustedPpq = ppqPosition / divisor;
 
-    currentFrameIndex = newFrameIndex;
+    // Calculate beat phase (0.0 to 1.0)
+    double beatPhase = BpmSync::beatPhase(adjustedPpq);
+    currentBeatPhase = beatPhase;
+
+    int totalFrames = static_cast<int>(frames.size());
+    int newFrameIndex;
+
+    if (pingPong)
+    {
+        // Ping-pong: 0->N->0 over one beat cycle
+        // First half: forward (0.0-0.5 -> frames 0 to N-1)
+        // Second half: backward (0.5-1.0 -> frames N-1 to 0)
+        if (beatPhase < 0.5)
+        {
+            double forwardPhase = beatPhase * 2.0; // 0.0 to 1.0
+            newFrameIndex = static_cast<int>(forwardPhase * totalFrames);
+        }
+        else
+        {
+            double backwardPhase = (1.0 - beatPhase) * 2.0; // 1.0 to 0.0
+            newFrameIndex = static_cast<int>(backwardPhase * totalFrames);
+        }
+    }
+    else if (reverse)
+    {
+        // Reverse: play from end to beginning
+        double reversePhase = 1.0 - beatPhase;
+        newFrameIndex = static_cast<int>(reversePhase * totalFrames);
+    }
+    else
+    {
+        // Normal forward playback
+        newFrameIndex = BpmSync::frameIndexFromPhase(beatPhase, totalFrames);
+    }
+
+    currentFrameIndex = std::clamp(newFrameIndex, 0, totalFrames - 1);
 }
 
 const juce::Image& GifAnimator::getCurrentFrame() const

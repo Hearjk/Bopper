@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(BeatGIF VERSION 1.0.0)
+project(Bopper VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,13 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(JUCE)
 
 # Configure plugin
-juce_add_plugin(BeatGIF
+juce_add_plugin(Bopper
     VERSION 1.0.0
-    COMPANY_NAME "BeatGIF"
-    PLUGIN_MANUFACTURER_CODE Btgf
-    PLUGIN_CODE Bgif
+    COMPANY_NAME "Bopper"
+    PLUGIN_MANUFACTURER_CODE Bopr
+    PLUGIN_CODE Bppr
     FORMATS AU Standalone
-    PRODUCT_NAME "BeatGIF"
+    PRODUCT_NAME "Bopper"
 
     # Plugin characteristics
     IS_SYNTH FALSE
@@ -31,12 +31,12 @@ juce_add_plugin(BeatGIF
 )
 
 # Source files
-target_sources(BeatGIF PRIVATE
+target_sources(Bopper PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
     Source/GIF/GifLoader.cpp
     Source/GIF/GifAnimator.cpp
-    Source/UI/BeatGIFLookAndFeel.cpp
+    Source/UI/BopperLookAndFeel.cpp
     Source/UI/GifDisplayComponent.cpp
     Source/UI/GifSelectorComponent.cpp
     Source/Utils/BpmSync.cpp
@@ -48,21 +48,21 @@ target_sources(BeatGIF PRIVATE
     Libs/giflib/openbsd-reallocarray.c
 )
 
-target_include_directories(BeatGIF PRIVATE
+target_include_directories(Bopper PRIVATE
     ${CMAKE_SOURCE_DIR}/Source
     ${CMAKE_SOURCE_DIR}/Libs
     ${CMAKE_SOURCE_DIR}/Libs/giflib
     ${CMAKE_SOURCE_DIR}/Libs/EasyGifReader
 )
 
-target_link_libraries(BeatGIF PRIVATE
+target_link_libraries(Bopper PRIVATE
     juce::juce_audio_utils
     juce::juce_audio_processors
     juce::juce_graphics
     juce::juce_gui_basics
 )
 
-target_compile_definitions(BeatGIF PUBLIC
+target_compile_definitions(Bopper PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
@@ -70,7 +70,7 @@ target_compile_definitions(BeatGIF PUBLIC
 )
 
 # Generate JuceHeader.h
-juce_generate_juce_header(BeatGIF)
+juce_generate_juce_header(Bopper)
 
 # Silence some warnings from giflib
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
