@@ -46,17 +46,91 @@
                 </div>
             </div>
 
-            <a href="Bopper.zip" class="download-button">
-                <span class="button-text">Download</span>
-                <span class="button-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                </span>
-            </a>
-            <p class="download-info">macOS AU Plugin & Standalone App</p>
+            <div class="button-group">
+                <a href="Bopper.zip" class="download-button">
+                    <span class="button-text">Download</span>
+                    <span class="button-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                    </span>
+                </a>
+                <button class="instructions-button" onclick="openModal()">
+                    <span>Install Guide</span>
+                </button>
+            </div>
+            <p class="download-info">macOS AU Plugin & Standalone App (Intel & Apple Silicon)</p>
+
+    <!-- Instructions Modal -->
+    <div id="modal" class="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2>Installation Guide</h2>
+
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Download & Unzip</h3>
+                    <p>Click the Download button and unzip <code>Bopper.zip</code></p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Copy Plugin</h3>
+                    <p>Move <code>Bopper.component</code> to:</p>
+                    <code class="path">~/Library/Audio/Plug-Ins/Components/</code>
+                    <p class="hint">Tip: Press Cmd+Shift+G in Finder and paste the path</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Allow Plugin (Required)</h3>
+                    <p>Open Terminal and run this command:</p>
+                    <div class="code-block">
+                        <code>xattr -cr ~/Library/Audio/Plug-Ins/Components/Bopper.component</code>
+                        <button class="copy-button" onclick="copyCommand()">Copy</button>
+                    </div>
+                    <p class="hint">This removes macOS quarantine since the plugin isn't notarized</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Restart DAW</h3>
+                    <p>Restart Logic Pro, Ableton, or your DAW. Bopper will appear as an AU instrument!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(event) {
+            if (!event || event.target.id === 'modal') {
+                document.getElementById('modal').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+        function copyCommand() {
+            navigator.clipboard.writeText("xattr -cr ~/Library/Audio/Plug-Ins/Components/Bopper.component");
+            const btn = document.querySelector('.copy-button');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 2000);
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
         </section>
 
         <footer>
