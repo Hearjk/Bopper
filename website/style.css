@@ -79,18 +79,18 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 60px 20px;
+    padding: 30px 20px;
 }
 
 /* Header & Logo */
 header {
     text-align: center;
-    margin-bottom: 60px;
+    margin-bottom: 24px;
 }
 
 .logo {
     font-family: 'Orbitron', sans-serif;
-    font-size: clamp(3rem, 12vw, 6rem);
+    font-size: clamp(2rem, 8vw, 3.5rem);
     font-weight: 900;
     letter-spacing: 0.2em;
     background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-pink) 50%, var(--neon-purple) 100%);
@@ -108,11 +108,11 @@ header {
 }
 
 .tagline {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     color: var(--text-dim);
-    letter-spacing: 0.3em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
-    margin-top: 16px;
+    margin-top: 8px;
 }
 
 /* Hero Section */
@@ -120,7 +120,7 @@ header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 40px;
+    gap: 20px;
     flex: 1;
 }
 
@@ -155,7 +155,7 @@ header {
 
 .app-image {
     display: block;
-    max-width: 500px;
+    max-width: 380px;
     width: 100%;
     height: auto;
     border-radius: 10px;
@@ -185,7 +185,7 @@ header {
 /* Features */
 .features {
     display: flex;
-    gap: 40px;
+    gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
 }
@@ -193,12 +193,12 @@ header {
 .feature {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 24px;
+    gap: 8px;
+    padding: 8px 16px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 30px;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     transition: all 0.3s ease;
@@ -218,13 +218,13 @@ header {
 .download-button {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
-    padding: 18px 48px;
+    gap: 10px;
+    padding: 14px 36px;
     background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
     color: var(--bg-dark);
     text-decoration: none;
     font-family: 'Orbitron', sans-serif;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
@@ -273,10 +273,10 @@ header {
 /* Footer */
 footer {
     margin-top: auto;
-    padding-top: 60px;
+    padding-top: 20px;
     text-align: center;
     color: var(--text-dim);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     letter-spacing: 0.05em;
 }
 
