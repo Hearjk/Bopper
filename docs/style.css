@@ -86,6 +86,21 @@ main {
 header {
     text-align: center;
     margin-bottom: 24px;
+    position: relative;
+}
+
+.back-to-app {
+    display: inline-block;
+    color: var(--neon-cyan);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    transition: all 0.2s;
+}
+
+.back-to-app:hover {
+    color: var(--neon-pink);
+    transform: translateX(-4px);
 }
 
 .logo {

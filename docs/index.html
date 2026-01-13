@@ -6,140 +6,147 @@
     <title>Bopper - Beat-Synced GIF Player</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app.css">
 </head>
 <body>
     <div class="background-grid"></div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
 
-    <main>
+    <main id="mainContent">
         <header>
             <h1 class="logo">BOPPER</h1>
-            <p class="tagline">Beat-Synced GIF Animation for Your DAW</p>
+            <span class="badge">WEB</span>
         </header>
 
-        <section class="hero">
-            <div class="app-showcase">
-                <div class="app-frame">
-                    <video class="app-video" autoplay loop muted playsinline>
-                        <source src="app-demo.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-            </div>
-
-            <div class="features">
-                <div class="feature">
-                    <span class="feature-icon">&#9835;</span>
-                    <span>BPM Sync</span>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">&#10024;</span>
-                    <span>Visual Effects</span>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">&#9654;</span>
-                    <span>Theater Mode</span>
-                </div>
-            </div>
-
-            <a href="app.html" class="webapp-button">
-                <span>Try Web App</span>
-                <span class="webapp-badge">NEW</span>
-            </a>
-
-            <div class="button-group">
-                <a href="Bopper.zip" class="download-button">
-                    <span class="button-text">Download</span>
-                    <span class="button-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                    </span>
-                </a>
-                <button class="instructions-button" onclick="openModal()">
-                    <span>Install Guide</span>
-                </button>
-            </div>
-            <p class="download-info">macOS AU Plugin & Standalone App (Intel & Apple Silicon)</p>
-
-    <!-- Instructions Modal -->
-    <div id="modal" class="modal" onclick="closeModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-            <h2>Installation Guide</h2>
-
-            <div class="step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <h3>Download & Unzip</h3>
-                    <p>Click the Download button and unzip <code>Bopper.zip</code></p>
-                </div>
-            </div>
-
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <h3>Copy Plugin</h3>
-                    <p>Move <code>Bopper.component</code> to:</p>
-                    <code class="path">~/Library/Audio/Plug-Ins/Components/</code>
-                    <p class="hint">Tip: Press Cmd+Shift+G in Finder and paste the path</p>
-                </div>
-            </div>
-
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <h3>Allow Plugin (Required)</h3>
-                    <p>Open Terminal and run this command:</p>
-                    <div class="code-block">
-                        <code>xattr -cr ~/Library/Audio/Plug-Ins/Components/Bopper.component</code>
-                        <button class="copy-button" onclick="copyCommand()">Copy</button>
-                    </div>
-                    <p class="hint">This removes macOS quarantine since the plugin isn't notarized</p>
-                </div>
-            </div>
-
-            <div class="step">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <h3>Restart DAW</h3>
-                    <p>Restart Logic Pro, Ableton, or your DAW. Bopper will appear as an AU instrument!</p>
+        <!-- GIF Display - Clickable for upload -->
+        <div class="gif-container">
+            <div class="gif-frame" id="gifFrame" onclick="triggerUpload()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+                <canvas id="gifCanvas"></canvas>
+                <img id="gifDisplay" src="" alt="GIF Preview">
+                <div class="placeholder" id="placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span>Drag or click here to upload GIF</span>
+                    <span class="placeholder-hint">or upload an image to animate</span>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        function openModal() {
-            document.getElementById('modal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeModal(event) {
-            if (!event || event.target.id === 'modal') {
-                document.getElementById('modal').classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        }
-        function copyCommand() {
-            navigator.clipboard.writeText("xattr -cr ~/Library/Audio/Plug-Ins/Components/Bopper.component");
-            const btn = document.querySelector('.copy-button');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy', 2000);
-        }
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
-        });
-    </script>
-        </section>
+        <!-- BPM Display -->
+        <div class="bpm-display">
+            <span class="bpm-value" id="bpmValue">120</span>
+            <span class="bpm-label">BPM</span>
+        </div>
+
+        <!-- BPM Controls -->
+        <div class="bpm-controls">
+            <div class="control-group">
+                <label>Set BPM</label>
+                <div class="input-row">
+                    <button class="adjust-btn" onclick="adjustBPM(-1)">-</button>
+                    <input type="number" id="bpmInput" value="120" min="20" max="300" onchange="setBPM(this.value)">
+                    <button class="adjust-btn" onclick="adjustBPM(1)">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Tap Tempo</label>
+                <button class="tap-btn" id="tapBtn" onclick="tapTempo()">
+                    TAP
+                </button>
+            </div>
+
+            <div class="control-group">
+                <label>Mic Detection</label>
+                <button class="mic-btn" id="micBtn" onclick="toggleMic()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                    <span id="micStatus">Start</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Effects Controls -->
+        <div class="effects-controls">
+            <button class="effect-btn" id="pulseBtn" onclick="toggleEffect('pulse')">PULSE</button>
+            <button class="effect-btn" id="shakeBtn" onclick="toggleEffect('shake')">SHAKE</button>
+            <button class="effect-btn" id="theaterBtn" onclick="enterTheaterMode()">THEATER</button>
+            <select id="filterSelect" onchange="setFilter(this.value)">
+                <option value="none">No Filter</option>
+                <option value="invert">Invert</option>
+                <option value="sepia">Sepia</option>
+                <option value="cyber">Cyber</option>
+                <option value="vapor">Vaporwave</option>
+                <option value="matrix">Matrix</option>
+            </select>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="playback-controls">
+            <button class="play-btn" id="playBtn" onclick="togglePlayback()">
+                <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5,3 19,12 5,21"/>
+                </svg>
+                <svg id="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+                    <rect x="6" y="4" width="4" height="16"/>
+                    <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+            </button>
+            <div class="speed-control">
+                <label>Speed</label>
+                <select id="speedSelect" onchange="setSpeed(this.value)">
+                    <option value="1">Normal</option>
+                    <option value="2">1/2</option>
+                    <option value="4">1/4</option>
+                    <option value="8">1/8</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Preset GIFs -->
+        <div class="upload-section">
+            <input type="file" id="gifInput" accept="image/gif,image/png,image/jpeg,image/webp" onchange="handleFileUpload(this.files[0])" hidden>
+            <div class="preset-gifs">
+                <span class="preset-label">Try a preset:</span>
+                <button class="preset-btn" onclick="loadPresetGIF('spongebob')">SpongeBob</button>
+                <button class="preset-btn" onclick="loadPresetGIF('band')">Band</button>
+                <button class="preset-btn" onclick="loadPresetGIF('gandalf')">Gandalf</button>
+            </div>
+        </div>
+
+        <!-- DAW Plugin Link -->
+        <div class="daw-link-section">
+            <a href="daw.html" class="daw-link-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+                <span>Get the DAW Plugin for macOS</span>
+            </a>
+        </div>
 
         <footer>
-            <p>&copy; 2025 Bopper. Made for musicians who love GIFs.</p>
+            <p>Bopper - Beat-synced GIF animation</p>
         </footer>
     </main>
+
+    <!-- Theater Mode Overlay -->
+    <div id="theaterMode" class="theater-mode">
+        <div class="theater-gif-container">
+            <canvas id="theaterCanvas"></canvas>
+            <img id="theaterGif" src="" alt="">
+        </div>
+        <div class="theater-exit-banner" onclick="exitTheaterMode()">
+            <span>Click here or press ESC to exit Theater Mode</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
