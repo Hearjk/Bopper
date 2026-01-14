@@ -21,6 +21,7 @@
         <!-- GIF Display - Clickable for upload -->
         <div class="gif-container">
             <div class="gif-frame" id="gifFrame" onclick="triggerUpload()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+                <button class="clear-gif-btn" id="clearGifBtn" onclick="clearGIF(event)">&times;</button>
                 <canvas id="gifCanvas"></canvas>
                 <img id="gifDisplay" src="" alt="GIF Preview">
                 <div class="placeholder" id="placeholder">

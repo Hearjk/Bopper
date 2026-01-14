@@ -97,13 +97,14 @@ header {
 /* GIF Container */
 .gif-container {
     width: 100%;
-    aspect-ratio: 1;
-    max-height: 300px;
+    max-width: 300px;
+    margin: 0 auto;
+    flex-shrink: 0;
 }
 
 .gif-frame {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 1;
     background: var(--bg-surface);
     border-radius: 16px;
     border: 2px dashed rgba(0, 212, 255, 0.3);
@@ -130,6 +131,37 @@ header {
     border-color: var(--neon-pink);
     background: rgba(255, 45, 149, 0.1);
     transform: scale(1.02);
+}
+
+/* Clear GIF Button */
+.clear-gif-btn {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: var(--text-primary);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+}
+
+.clear-gif-btn:hover {
+    background: var(--neon-pink);
+    border-color: var(--neon-pink);
+    color: white;
+}
+
+.gif-frame.has-content .clear-gif-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #gifCanvas {
@@ -598,11 +630,12 @@ footer {
 @media (max-width: 500px) {
     main {
         padding: 15px;
-        gap: 12px;
+        gap: 10px;
+        overflow-y: auto;
     }
 
     .gif-container {
-        max-height: 250px;
+        max-width: 280px;
     }
 
     .bpm-display {
@@ -645,15 +678,96 @@ footer {
         width: 44px;
         height: 44px;
     }
+
+    .daw-link-btn {
+        padding: 10px 18px;
+        font-size: 0.8rem;
+    }
+
+    footer {
+        display: none;
+    }
+}
+
+@media (max-width: 400px) {
+    .gif-container {
+        max-width: 260px;
+    }
+
+    .bpm-value {
+        font-size: 1.8rem;
+    }
+
+    .effects-controls {
+        gap: 4px;
+    }
+
+    .effect-btn, #filterSelect {
+        padding: 5px 8px;
+        font-size: 0.65rem;
+    }
+
+    .preset-gifs {
+        gap: 6px;
+    }
+
+    .preset-label {
+        font-size: 0.75rem;
+    }
+
+    .preset-btn {
+        padding: 5px 10px;
+        font-size: 0.7rem;
+    }
 }
 
 @media (max-width: 360px) {
+    .gif-container {
+        max-width: 240px;
+    }
+
     .bpm-controls {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
+    }
+
+    .bpm-controls .control-group:first-child {
+        grid-column: span 2;
     }
 
     .logo {
         font-size: 1.5rem;
+    }
+}
+
+/* Very short screens (landscape mobile) */
+@media (max-height: 600px) {
+    main {
+        gap: 8px;
+        padding: 10px 15px;
+    }
+
+    .gif-container {
+        max-width: 150px;
+    }
+
+    .bpm-display {
+        padding: 0;
+    }
+
+    .bpm-value {
+        font-size: 1.6rem;
+    }
+
+    .control-group {
+        padding: 6px;
+    }
+
+    .daw-link-section {
+        padding: 4px 0;
+    }
+
+    footer {
+        padding: 4px;
     }
 }

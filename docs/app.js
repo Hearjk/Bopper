@@ -87,6 +87,41 @@ function handleDrop(e) {
     }
 }
 
+// Clear current GIF and allow new upload
+function clearGIF(e) {
+    e.stopPropagation(); // Prevent triggering upload
+
+    // Stop playback
+    if (isPlaying) {
+        togglePlayback();
+    }
+
+    // Reset state
+    generatedFrames = [];
+    currentFrameIndex = 0;
+    originalGifSrc = null;
+    isAnimatedGif = false;
+
+    // Clear displays
+    gifDisplay.src = '';
+    gifDisplay.classList.remove('active');
+    gifCanvas.classList.remove('active');
+    if (gifCanvas.ctx) {
+        gifCanvas.ctx.clearRect(0, 0, gifCanvas.width, gifCanvas.height);
+    }
+
+    // Show placeholder
+    placeholder.classList.remove('hidden');
+    gifFrame.classList.remove('has-content');
+
+    // Clear theater mode
+    theaterGif.src = '';
+    theaterCanvas.classList.remove('active');
+
+    // Reset file input
+    document.getElementById('gifInput').value = '';
+}
+
 // Remove drag-over when leaving
 document.addEventListener('DOMContentLoaded', () => {
     gifFrame.addEventListener('dragleave', (e) => {
@@ -290,26 +325,417 @@ function detectBeats() {
 // GIF Loading with frame extraction for BPM sync
 function loadGIF(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         originalGifSrc = e.target.result;
-        isAnimatedGif = true;
-        generatedFrames = [];
 
-        // Show the GIF directly (browser handles animation)
-        gifDisplay.src = originalGifSrc;
-        gifDisplay.classList.add('active');
-        gifCanvas.classList.remove('active');
-        placeholder.classList.add('hidden');
-        gifFrame.classList.add('has-content');
+        // Try to extract frames from the GIF for BPM-synced playback
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const frames = await extractGifFrames(arrayBuffer);
 
-        // Update theater mode
-        theaterGif.src = originalGifSrc;
+            if (frames && frames.length > 1) {
+                // Successfully extracted frames - use canvas playback
+                generatedFrames = frames;
+                isAnimatedGif = false; // Use our frame-based playback
+                currentFrameIndex = 0;
+
+                // Setup canvas with frame dimensions
+                const firstFrame = frames[0];
+                gifCanvas.width = firstFrame.width;
+                gifCanvas.height = firstFrame.height;
+                theaterCanvas.width = firstFrame.width;
+                theaterCanvas.height = firstFrame.height;
+
+                // Show canvas instead of img
+                gifDisplay.classList.remove('active');
+                gifCanvas.classList.add('active');
+                placeholder.classList.add('hidden');
+                gifFrame.classList.add('has-content');
+
+                // Draw first frame
+                drawFrame(0);
+            } else {
+                // Fallback to native GIF playback
+                fallbackToNativeGif();
+            }
+        } catch (err) {
+            console.warn('Could not extract GIF frames, using native playback:', err);
+            fallbackToNativeGif();
+        }
 
         if (!isPlaying) {
             togglePlayback();
         }
     };
     reader.readAsDataURL(file);
+
+    function fallbackToNativeGif() {
+        isAnimatedGif = true;
+        generatedFrames = [];
+        gifDisplay.src = originalGifSrc;
+        gifDisplay.classList.add('active');
+        gifCanvas.classList.remove('active');
+        placeholder.classList.add('hidden');
+        gifFrame.classList.add('has-content');
+        theaterGif.src = originalGifSrc;
+    }
+}
+
+// Extract frames from GIF binary data
+async function extractGifFrames(arrayBuffer) {
+    // Use ImageDecoder API if available (modern browsers)
+    if ('ImageDecoder' in window) {
+        return await extractFramesWithImageDecoder(arrayBuffer);
+    }
+
+    // Fallback: parse GIF manually
+    return await parseGifFrames(arrayBuffer);
+}
+
+// Modern approach using ImageDecoder API
+async function extractFramesWithImageDecoder(arrayBuffer) {
+    const decoder = new ImageDecoder({
+        data: arrayBuffer,
+        type: 'image/gif'
+    });
+
+    await decoder.decode({ frameIndex: 0 }); // Ensure decoder is ready
+
+    const track = decoder.tracks.selectedTrack;
+    const frameCount = track.frameCount;
+    const frames = [];
+
+    // Create canvases for compositing frames
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const compositeCanvas = document.createElement('canvas');
+    const compositeCtx = compositeCanvas.getContext('2d');
+
+    // Get first frame to determine dimensions
+    const firstResult = await decoder.decode({ frameIndex: 0 });
+    const firstFrame = firstResult.image;
+
+    canvas.width = firstFrame.displayWidth;
+    canvas.height = firstFrame.displayHeight;
+    compositeCanvas.width = canvas.width;
+    compositeCanvas.height = canvas.height;
+
+    // Clear to transparent initially
+    compositeCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+    firstFrame.close();
+
+    // Decode all frames with proper compositing
+    for (let i = 0; i < frameCount; i++) {
+        const result = await decoder.decode({ frameIndex: i, completeFramesOnly: true });
+        const frame = result.image;
+
+        // Draw onto composite canvas (ImageDecoder handles disposal for us in complete mode)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(frame, 0, 0);
+
+        // Copy to composite
+        compositeCtx.drawImage(canvas, 0, 0);
+
+        // Store the composited frame
+        frames.push(compositeCtx.getImageData(0, 0, canvas.width, canvas.height));
+
+        frame.close();
+    }
+
+    decoder.close();
+    return frames;
+}
+
+// Fallback GIF parser for browsers without ImageDecoder
+async function parseGifFrames(arrayBuffer) {
+    const data = new Uint8Array(arrayBuffer);
+
+    // Verify GIF signature
+    const signature = String.fromCharCode(data[0], data[1], data[2]);
+    if (signature !== 'GIF') {
+        throw new Error('Not a valid GIF');
+    }
+
+    // Parse GIF using pure JavaScript
+    const gif = parseGIF(data);
+    const frames = decompressFrames(gif);
+
+    if (frames.length === 0) {
+        throw new Error('No frames found');
+    }
+
+    // Create canvas for compositing
+    const canvas = document.createElement('canvas');
+    canvas.width = gif.width;
+    canvas.height = gif.height;
+    const ctx = canvas.getContext('2d');
+
+    const result = [];
+
+    for (const frame of frames) {
+        // Handle disposal method
+        if (frame.disposalType === 2) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Create ImageData for this frame
+        const imageData = ctx.createImageData(frame.width, frame.height);
+        imageData.data.set(frame.pixels);
+
+        // Draw frame at its position
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = frame.width;
+        tempCanvas.height = frame.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        ctx.drawImage(tempCanvas, frame.left, frame.top);
+
+        // Store composited frame
+        result.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    return result;
+}
+
+// GIF Parser - parses GIF structure
+function parseGIF(data) {
+    let pos = 6; // Skip signature
+
+    const width = data[pos] | (data[pos + 1] << 8);
+    const height = data[pos + 2] | (data[pos + 3] << 8);
+    const packed = data[pos + 4];
+    const globalColorTableFlag = (packed & 0x80) !== 0;
+    const globalColorTableSize = 2 << (packed & 0x07);
+    pos += 7;
+
+    let globalColorTable = null;
+    if (globalColorTableFlag) {
+        globalColorTable = [];
+        for (let i = 0; i < globalColorTableSize; i++) {
+            globalColorTable.push([data[pos++], data[pos++], data[pos++]]);
+        }
+    }
+
+    const frames = [];
+    let gce = null;
+
+    while (pos < data.length) {
+        const blockType = data[pos++];
+
+        if (blockType === 0x21) { // Extension
+            const extType = data[pos++];
+            if (extType === 0xF9) { // Graphics Control Extension
+                pos++; // Block size
+                const gcePacked = data[pos++];
+                gce = {
+                    disposalMethod: (gcePacked >> 2) & 0x07,
+                    transparentColorFlag: (gcePacked & 0x01) !== 0,
+                    delay: data[pos] | (data[pos + 1] << 8),
+                    transparentColorIndex: data[pos + 2]
+                };
+                pos += 3;
+                pos++; // Block terminator
+            } else {
+                // Skip other extensions
+                while (data[pos] !== 0) {
+                    pos += data[pos] + 1;
+                }
+                pos++; // Block terminator
+            }
+        } else if (blockType === 0x2C) { // Image Descriptor
+            const frame = {
+                left: data[pos] | (data[pos + 1] << 8),
+                top: data[pos + 2] | (data[pos + 3] << 8),
+                width: data[pos + 4] | (data[pos + 5] << 8),
+                height: data[pos + 6] | (data[pos + 7] << 8),
+                localColorTable: null,
+                interlaced: false,
+                gce: gce
+            };
+            pos += 8;
+
+            const imgPacked = data[pos++];
+            const localColorTableFlag = (imgPacked & 0x80) !== 0;
+            frame.interlaced = (imgPacked & 0x40) !== 0;
+            const localColorTableSize = 2 << (imgPacked & 0x07);
+
+            if (localColorTableFlag) {
+                frame.localColorTable = [];
+                for (let i = 0; i < localColorTableSize; i++) {
+                    frame.localColorTable.push([data[pos++], data[pos++], data[pos++]]);
+                }
+            }
+
+            frame.colorTable = frame.localColorTable || globalColorTable;
+
+            // LZW minimum code size
+            frame.minCodeSize = data[pos++];
+
+            // Collect image data sub-blocks
+            frame.data = [];
+            while (data[pos] !== 0) {
+                const blockSize = data[pos++];
+                for (let i = 0; i < blockSize; i++) {
+                    frame.data.push(data[pos++]);
+                }
+            }
+            pos++; // Block terminator
+
+            frames.push(frame);
+            gce = null;
+        } else if (blockType === 0x3B) { // Trailer
+            break;
+        } else {
+            // Unknown block, try to skip
+            break;
+        }
+    }
+
+    return { width, height, frames };
+}
+
+// LZW Decompression
+function lzwDecode(minCodeSize, data) {
+    const clearCode = 1 << minCodeSize;
+    const eoiCode = clearCode + 1;
+    let codeSize = minCodeSize + 1;
+    let codeMask = (1 << codeSize) - 1;
+    let nextCode = eoiCode + 1;
+
+    // Initialize code table
+    let codeTable = [];
+    for (let i = 0; i < clearCode; i++) {
+        codeTable[i] = [i];
+    }
+
+    const output = [];
+    let bitPos = 0;
+    let bytePos = 0;
+    let prevCode = -1;
+
+    function readCode() {
+        let code = 0;
+        let bitsRead = 0;
+        while (bitsRead < codeSize) {
+            if (bytePos >= data.length) return -1;
+            const bitsAvailable = 8 - bitPos;
+            const bitsToRead = Math.min(codeSize - bitsRead, bitsAvailable);
+            const mask = (1 << bitsToRead) - 1;
+            code |= ((data[bytePos] >> bitPos) & mask) << bitsRead;
+            bitsRead += bitsToRead;
+            bitPos += bitsToRead;
+            if (bitPos >= 8) {
+                bitPos = 0;
+                bytePos++;
+            }
+        }
+        return code;
+    }
+
+    while (true) {
+        const code = readCode();
+        if (code === -1 || code === eoiCode) break;
+
+        if (code === clearCode) {
+            codeSize = minCodeSize + 1;
+            codeMask = (1 << codeSize) - 1;
+            nextCode = eoiCode + 1;
+            codeTable = [];
+            for (let i = 0; i < clearCode; i++) {
+                codeTable[i] = [i];
+            }
+            prevCode = -1;
+            continue;
+        }
+
+        let entry;
+        if (code < nextCode) {
+            entry = codeTable[code];
+        } else if (code === nextCode && prevCode !== -1) {
+            entry = [...codeTable[prevCode], codeTable[prevCode][0]];
+        } else {
+            break; // Invalid code
+        }
+
+        output.push(...entry);
+
+        if (prevCode !== -1 && nextCode < 4096) {
+            codeTable[nextCode++] = [...codeTable[prevCode], entry[0]];
+            if (nextCode > codeMask && codeSize < 12) {
+                codeSize++;
+                codeMask = (1 << codeSize) - 1;
+            }
+        }
+
+        prevCode = code;
+    }
+
+    return output;
+}
+
+// Decompress all frames
+function decompressFrames(gif) {
+    const result = [];
+
+    for (const frame of gif.frames) {
+        const indices = lzwDecode(frame.minCodeSize, frame.data);
+        const pixels = new Uint8ClampedArray(frame.width * frame.height * 4);
+
+        const transparentIndex = frame.gce?.transparentColorFlag ? frame.gce.transparentColorIndex : -1;
+
+        // Handle interlacing
+        let rowMapping;
+        if (frame.interlaced) {
+            rowMapping = [];
+            const passes = [[0, 8], [4, 8], [2, 4], [1, 2]];
+            let row = 0;
+            for (const [start, step] of passes) {
+                for (let y = start; y < frame.height; y += step) {
+                    rowMapping[row++] = y;
+                }
+            }
+        }
+
+        for (let i = 0; i < indices.length && i < frame.width * frame.height; i++) {
+            const colorIndex = indices[i];
+
+            let pixelIndex;
+            if (frame.interlaced) {
+                const srcRow = Math.floor(i / frame.width);
+                const col = i % frame.width;
+                const destRow = rowMapping[srcRow];
+                pixelIndex = (destRow * frame.width + col) * 4;
+            } else {
+                pixelIndex = i * 4;
+            }
+
+            if (colorIndex === transparentIndex) {
+                pixels[pixelIndex] = 0;
+                pixels[pixelIndex + 1] = 0;
+                pixels[pixelIndex + 2] = 0;
+                pixels[pixelIndex + 3] = 0;
+            } else if (frame.colorTable && frame.colorTable[colorIndex]) {
+                const color = frame.colorTable[colorIndex];
+                pixels[pixelIndex] = color[0];
+                pixels[pixelIndex + 1] = color[1];
+                pixels[pixelIndex + 2] = color[2];
+                pixels[pixelIndex + 3] = 255;
+            }
+        }
+
+        result.push({
+            left: frame.left,
+            top: frame.top,
+            width: frame.width,
+            height: frame.height,
+            pixels: pixels,
+            disposalType: frame.gce?.disposalMethod || 0
+        });
+    }
+
+    return result;
 }
 
 // Convert static image to animated GIF frames
@@ -405,29 +831,76 @@ function drawFrame(frameIndex) {
 }
 
 // Preset GIFs - Same as DAW app
-function loadPresetGIF(preset) {
+async function loadPresetGIF(preset) {
     const presets = {
-        spongebob: 'https://media.giphy.com/media/nDSlfqf0gn5g4/giphy.gif',
-        band: 'https://media.giphy.com/media/l46CyJmS9KUbokzsI/giphy.gif',
-        gandalf: 'https://media.giphy.com/media/TcdpZwYDPlWXC/giphy.gif'
+        spongebob: 'spongebob.gif',
+        band: 'danceband.gif',
+        gandalf: 'gandalf.gif'
     };
 
-    if (presets[preset]) {
-        originalGifSrc = presets[preset];
+    if (!presets[preset]) return;
+
+    originalGifSrc = presets[preset];
+
+    // Show loading state
+    placeholder.classList.remove('hidden');
+    placeholder.innerHTML = '<span>Loading...</span>';
+
+    try {
+        // Fetch the GIF and extract frames
+        const response = await fetch(presets[preset]);
+        const arrayBuffer = await response.arrayBuffer();
+        const frames = await extractGifFrames(arrayBuffer);
+
+        if (frames && frames.length > 1) {
+            generatedFrames = frames;
+            isAnimatedGif = false;
+            currentFrameIndex = 0;
+
+            const firstFrame = frames[0];
+            gifCanvas.width = firstFrame.width;
+            gifCanvas.height = firstFrame.height;
+            theaterCanvas.width = firstFrame.width;
+            theaterCanvas.height = firstFrame.height;
+
+            gifDisplay.classList.remove('active');
+            gifCanvas.classList.add('active');
+            placeholder.classList.add('hidden');
+            gifFrame.classList.add('has-content');
+
+            drawFrame(0);
+        } else {
+            fallbackToNativePreset();
+        }
+    } catch (err) {
+        console.warn('Could not extract preset GIF frames:', err);
+        fallbackToNativePreset();
+    }
+
+    if (!isPlaying) {
+        togglePlayback();
+    }
+
+    // Restore placeholder content
+    placeholder.innerHTML = `
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>Drag or click here to upload GIF</span>
+        <span class="placeholder-hint">or upload an image to animate</span>
+    `;
+
+    function fallbackToNativePreset() {
         isAnimatedGif = true;
         generatedFrames = [];
-
         gifDisplay.src = presets[preset];
         gifDisplay.classList.add('active');
         gifCanvas.classList.remove('active');
         placeholder.classList.add('hidden');
         gifFrame.classList.add('has-content');
-
         theaterGif.src = presets[preset];
-
-        if (!isPlaying) {
-            togglePlayback();
-        }
     }
 }
 
@@ -454,16 +927,24 @@ function startAnimation() {
 
     function beat() {
         const now = Date.now();
+        const elapsed = now - lastBeatTime;
 
-        if (now - lastBeatTime >= beatInterval) {
-            lastBeatTime = now;
-            beatCount++;
+        // Advance frames for generated animations - complete full cycle each beat
+        if (generatedFrames.length > 0) {
+            // Calculate which frame we should be on based on progress through the beat
+            const progress = (elapsed % beatInterval) / beatInterval;
+            const frameIndex = Math.floor(progress * generatedFrames.length);
 
-            // Advance frame for generated animations
-            if (generatedFrames.length > 0) {
-                currentFrameIndex = (currentFrameIndex + 1) % generatedFrames.length;
+            if (frameIndex !== currentFrameIndex) {
+                currentFrameIndex = frameIndex;
                 drawFrame(currentFrameIndex);
             }
+        }
+
+        // Check for beat boundary for pulse effect
+        if (elapsed >= beatInterval) {
+            lastBeatTime = now;
+            beatCount++;
 
             // Trigger pulse effect on beat
             if (pulseEnabled) {
@@ -534,16 +1015,18 @@ function enterTheaterMode() {
     document.body.style.overflow = 'hidden';
 
     // Copy current state to theater
-    if (isAnimatedGif && originalGifSrc) {
-        theaterGif.src = originalGifSrc;
-        theaterGif.classList.add('active');
-        theaterCanvas.classList.remove('active');
-    } else if (generatedFrames.length > 0) {
+    if (generatedFrames.length > 0) {
+        // Use canvas for BPM-synced playback (both extracted GIF frames and generated frames)
         theaterGif.classList.remove('active');
         theaterCanvas.classList.add('active');
         theaterCanvas.width = gifCanvas.width;
         theaterCanvas.height = gifCanvas.height;
         drawFrame(currentFrameIndex);
+    } else if (isAnimatedGif && originalGifSrc) {
+        // Fallback to native GIF
+        theaterGif.src = originalGifSrc;
+        theaterGif.classList.add('active');
+        theaterCanvas.classList.remove('active');
     }
 
     // Apply current filter
