@@ -29,8 +29,8 @@ juce_add_plugin(Bopper
     # Auto-install after build
     COPY_PLUGIN_AFTER_BUILD TRUE
 
-    # AU-specific
-    AU_MAIN_TYPE kAudioUnitType_MusicEffect
+    # AU-specific - using Effect type since we don't need MIDI
+    AU_MAIN_TYPE kAudioUnitType_Effect
 )
 
 # Source files
