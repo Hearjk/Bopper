@@ -75,6 +75,16 @@ target_compile_definitions(Bopper PUBLIC
 # Generate JuceHeader.h
 juce_generate_juce_header(Bopper)
 
+# Embed preset GIFs as binary resources
+juce_add_binary_data(BopperBinaryData
+    SOURCES
+        gifs/spongebob.gif
+        gifs/gandalf.gif
+        "gifs/Dance Band GIF.gif"
+)
+
+target_link_libraries(Bopper PRIVATE BopperBinaryData)
+
 # Silence some warnings from giflib
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     set_source_files_properties(

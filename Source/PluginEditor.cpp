@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "BinaryData.h"
 
 BopperAudioProcessorEditor::BopperAudioProcessorEditor(BopperAudioProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p)
@@ -317,57 +318,29 @@ void BopperAudioProcessorEditor::updateSpeedLabel()
 
 void BopperAudioProcessorEditor::loadPresetGif(int index)
 {
-    // Preset gif filenames: SpongeBob, Gandalf, Dance Band
-    const char* presetFiles[] = {
-        "spongebob.gif",
-        "gandalf.gif",
-        "Dance Band GIF.gif"
-    };
-
     if (index < 0 || index >= 3)
         return;
 
-    // Try to find the gifs folder in various locations
-    juce::File gifsFolder;
+    // Load from embedded binary data
+    const char* binaryDataPtrs[] = {
+        BinaryData::spongebob_gif,
+        BinaryData::gandalf_gif,
+        BinaryData::Dance_Band_GIF_gif
+    };
 
-    // Try user's Documents/Bopper/gifs
-    auto docsFolder = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-                          .getChildFile("Bopper").getChildFile("gifs");
-    if (docsFolder.isDirectory())
-        gifsFolder = docsFolder;
+    const int binaryDataSizes[] = {
+        BinaryData::spongebob_gifSize,
+        BinaryData::gandalf_gifSize,
+        BinaryData::Dance_Band_GIF_gifSize
+    };
 
-    // Try user's Desktop/Bopper/gifs (for development)
-    if (!gifsFolder.isDirectory())
+    if (gifAnimator.loadGif(binaryDataPtrs[index], static_cast<size_t>(binaryDataSizes[index])))
     {
-        auto desktopFolder = juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
-                                .getChildFile("Bopper").getChildFile("gifs");
-        if (desktopFolder.isDirectory())
-            gifsFolder = desktopFolder;
+        gifDisplay.updateDisplay();
+        return;
     }
 
-    // Try Application Data/Bopper/gifs
-    if (!gifsFolder.isDirectory())
-    {
-        auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                                .getChildFile("Bopper").getChildFile("gifs");
-        if (appDataFolder.isDirectory())
-            gifsFolder = appDataFolder;
-    }
-
-    if (gifsFolder.isDirectory())
-    {
-        juce::File gifFile = gifsFolder.getChildFile(presetFiles[index]);
-        if (gifFile.existsAsFile())
-        {
-            if (gifAnimator.loadGif(gifFile))
-            {
-                gifDisplay.updateDisplay();
-                return;
-            }
-        }
-    }
-
-    // Fallback: generate a simple placeholder if gif not found
+    // Fallback: generate a simple placeholder if load failed
     const int frameCount = 8;
     const int size = 200;
     std::vector<juce::Image> frames;
