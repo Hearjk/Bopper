@@ -135,13 +135,16 @@ function handleFileUpload(file) {
 
     const isGif = file.type === 'image/gif';
     const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
 
-    if (!isImage) {
-        alert('Please select an image file');
+    if (!isImage && !isVideo) {
+        alert('Please select an image or video file');
         return;
     }
 
-    if (isGif) {
+    if (isVideo) {
+        loadVideo(file);
+    } else if (isGif) {
         loadGIF(file);
     } else {
         // Convert static image to animated GIF
@@ -320,6 +323,132 @@ function detectBeats() {
     }
 
     analyze();
+}
+
+// Video Loading - extract frames for BPM sync
+function loadVideo(file) {
+    const video = document.getElementById('videoSource');
+    const url = URL.createObjectURL(file);
+
+    // Show loading state
+    placeholder.classList.remove('hidden');
+    placeholder.innerHTML = '<span>Processing video...</span>';
+
+    video.src = url;
+    video.load();
+
+    video.onloadedmetadata = async () => {
+        try {
+            const frames = await extractVideoFrames(video);
+
+            if (frames && frames.length > 0) {
+                generatedFrames = frames;
+                isAnimatedGif = false;
+                currentFrameIndex = 0;
+
+                const firstFrame = frames[0];
+                gifCanvas.width = firstFrame.width;
+                gifCanvas.height = firstFrame.height;
+                theaterCanvas.width = firstFrame.width;
+                theaterCanvas.height = firstFrame.height;
+
+                gifDisplay.classList.remove('active');
+                gifCanvas.classList.add('active');
+                placeholder.classList.add('hidden');
+                gifFrame.classList.add('has-content');
+
+                drawFrame(0);
+
+                if (!isPlaying) {
+                    togglePlayback();
+                }
+            }
+        } catch (err) {
+            console.error('Error extracting video frames:', err);
+            alert('Could not process video. Please try a different file.');
+            placeholder.classList.add('hidden');
+        } finally {
+            URL.revokeObjectURL(url);
+            restorePlaceholder();
+        }
+    };
+
+    video.onerror = () => {
+        console.error('Error loading video');
+        alert('Could not load video. Please try a different file.');
+        URL.revokeObjectURL(url);
+        restorePlaceholder();
+    };
+}
+
+// Extract frames from video at regular intervals
+async function extractVideoFrames(video, numFrames = 16) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Determine dimensions (max 400px)
+    const maxSize = 400;
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+
+    if (width > height) {
+        if (width > maxSize) {
+            height = Math.round(height * maxSize / width);
+            width = maxSize;
+        }
+    } else {
+        if (height > maxSize) {
+            width = Math.round(width * maxSize / height);
+            height = maxSize;
+        }
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const duration = video.duration;
+    const interval = duration / numFrames;
+    const frames = [];
+
+    for (let i = 0; i < numFrames; i++) {
+        const time = i * interval;
+
+        await new Promise((resolve, reject) => {
+            const onSeeked = () => {
+                video.removeEventListener('seeked', onSeeked);
+                video.removeEventListener('error', onError);
+
+                ctx.drawImage(video, 0, 0, width, height);
+                frames.push(ctx.getImageData(0, 0, width, height));
+                resolve();
+            };
+
+            const onError = () => {
+                video.removeEventListener('seeked', onSeeked);
+                video.removeEventListener('error', onError);
+                reject(new Error('Seek failed'));
+            };
+
+            video.addEventListener('seeked', onSeeked);
+            video.addEventListener('error', onError);
+            video.currentTime = time;
+        });
+    }
+
+    return frames;
+}
+
+// Helper to restore placeholder content
+function restorePlaceholder() {
+    placeholder.innerHTML = `
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>Drag or click to upload</span>
+        <span class="placeholder-hint">GIF, image, or video</span>
+    `;
 }
 
 // GIF Loading with frame extraction for BPM sync
@@ -882,15 +1011,7 @@ async function loadPresetGIF(preset) {
     }
 
     // Restore placeholder content
-    placeholder.innerHTML = `
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        <span>Drag or click here to upload GIF</span>
-        <span class="placeholder-hint">or upload an image to animate</span>
-    `;
+    restorePlaceholder();
 
     function fallbackToNativePreset() {
         isAnimatedGif = true;

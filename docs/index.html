@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bopper - Beat-Synced GIF Player</title>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -30,8 +31,8 @@
                         <polyline points="17 8 12 3 7 8"/>
                         <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
-                    <span>Drag or click here to upload GIF</span>
-                    <span class="placeholder-hint">or upload an image to animate</span>
+                    <span>Drag or click to upload</span>
+                    <span class="placeholder-hint">GIF, image, or video</span>
                 </div>
             </div>
         </div>
@@ -113,7 +114,8 @@
 
         <!-- Preset GIFs -->
         <div class="upload-section">
-            <input type="file" id="gifInput" accept="image/gif,image/png,image/jpeg,image/webp" onchange="handleFileUpload(this.files[0])" hidden>
+            <input type="file" id="gifInput" accept="image/gif,image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" onchange="handleFileUpload(this.files[0])" hidden>
+            <video id="videoSource" style="display:none" muted playsinline></video>
             <div class="preset-gifs">
                 <span class="preset-label">Try a preset:</span>
                 <button class="preset-btn" onclick="loadPresetGIF('spongebob')">SpongeBob</button>
